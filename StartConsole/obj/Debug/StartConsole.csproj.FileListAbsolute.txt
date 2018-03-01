@@ -1,0 +1,10 @@
+D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\StartConsole.exe.config
+D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\StartConsole.exe
+D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\StartConsole.pdb
+D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\ParallelComputingTest.dll
+D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\Serialization.dll
+D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\ParallelComputingTest.pdb
+D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\Serialization.pdb
+D:\Programming\ParallelComputingPilot\StartConsole\obj\Debug\StartConsole.csprojResolveAssemblyReference.cache
+D:\Programming\ParallelComputingPilot\StartConsole\obj\Debug\StartConsole.exe
+D:\Programming\ParallelComputingPilot\StartConsole\obj\Debug\StartConsole.pdb

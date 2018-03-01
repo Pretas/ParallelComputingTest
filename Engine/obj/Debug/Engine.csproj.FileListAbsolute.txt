@@ -1,0 +1,5 @@
+D:\Programming\ParallelComputingPilot\Engine\bin\Debug\ParallelComputingTest.dll
+D:\Programming\ParallelComputingPilot\Engine\bin\Debug\ParallelComputingTest.pdb
+D:\Programming\ParallelComputingPilot\Engine\obj\Debug\Engine.csprojResolveAssemblyReference.cache
+D:\Programming\ParallelComputingPilot\Engine\obj\Debug\ParallelComputingTest.dll
+D:\Programming\ParallelComputingPilot\Engine\obj\Debug\ParallelComputingTest.pdb

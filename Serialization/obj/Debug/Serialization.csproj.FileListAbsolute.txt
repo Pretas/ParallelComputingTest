@@ -1,0 +1,5 @@
+D:\Programming\ParallelComputingPilot\Serialization\bin\Debug\Serialization.dll
+D:\Programming\ParallelComputingPilot\Serialization\bin\Debug\Serialization.pdb
+D:\Programming\ParallelComputingPilot\Serialization\obj\Debug\Serialization.csprojResolveAssemblyReference.cache
+D:\Programming\ParallelComputingPilot\Serialization\obj\Debug\Serialization.dll
+D:\Programming\ParallelComputingPilot\Serialization\obj\Debug\Serialization.pdb
