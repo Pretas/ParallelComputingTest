@@ -54,9 +54,9 @@
       <Project>{04102ea2-8d94-4353-89fe-c4074efec5c9}</Project>
       <Name>Engine</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Serialization\Serialization.csproj">
-      <Project>{fe2bec2f-9853-4e6f-bdaa-5868b7276379}</Project>
-      <Name>Serialization</Name>
+    <ProjectReference Include="..\Tools\Tools.csproj">
+      <Project>{5ce3cb04-e86c-4afa-8680-e8a8b0695846}</Project>
+      <Name>Tools</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
