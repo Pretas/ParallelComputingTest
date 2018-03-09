@@ -16,8 +16,8 @@ namespace StartConsole
             Engine.ValuationResult res3 = new Engine.ValuationResult(2.0, 2.1, 2.2, 2.3, 2.4);
 
             //테스트1, 객체
-            byte[] resb1 = Serialization.SerializationUtil.SerializeToByte(res1);
-            Engine.ValuationResult res1Returned = (Engine.ValuationResult)Serialization.SerializationUtil.DeserializeToObject(resb1);
+            byte[] resb1 = Tools.SerializationUtil.SerializeToByte(res1);
+            Engine.ValuationResult res1Returned = (Engine.ValuationResult)Tools.SerializationUtil.DeserializeToObject(resb1);
 
             //테스트2, Dic<객체> 
             Dictionary<int, Engine.ValuationResult> dicRes = new Dictionary<int, Engine.ValuationResult>();
@@ -25,8 +25,8 @@ namespace StartConsole
             dicRes.Add(2, res2);
             dicRes.Add(3, res3);
 
-            byte[] dicResByte = Serialization.SerializationUtil.SerializeToByte(dicRes);
-            Dictionary<int, Engine.ValuationResult> dicResReturned = (Dictionary<int, Engine.ValuationResult>)Serialization.SerializationUtil.DeserializeToObject(dicResByte);
+            byte[] dicResByte = Tools.SerializationUtil.SerializeToByte(dicRes);
+            Dictionary<int, Engine.ValuationResult> dicResReturned = (Dictionary<int, Engine.ValuationResult>)Tools.SerializationUtil.DeserializeToObject(dicResByte);
 
             //테스트3, List<List<객체>> 
             Dictionary<int, Engine.ValuationResult> dicRes2 = new Dictionary<int, Engine.ValuationResult>();
@@ -38,8 +38,8 @@ namespace StartConsole
             dicOfDicRes.Add(1, dicRes);
             dicOfDicRes.Add(2, dicRes2);
             
-            byte[] dicOfDicResByte = Serialization.SerializationUtil.SerializeToByte(dicOfDicRes);
-            Dictionary<int, Dictionary<int, Engine.ValuationResult>> dicOfDicResReturned = (Dictionary<int, Dictionary<int, Engine.ValuationResult>>)Serialization.SerializationUtil.DeserializeToObject(dicOfDicResByte);
+            byte[] dicOfDicResByte = Tools.SerializationUtil.SerializeToByte(dicOfDicRes);
+            Dictionary<int, Dictionary<int, Engine.ValuationResult>> dicOfDicResReturned = (Dictionary<int, Dictionary<int, Engine.ValuationResult>>)Tools.SerializationUtil.DeserializeToObject(dicOfDicResByte);
 
             Console.WriteLine();
         }
@@ -52,8 +52,8 @@ namespace StartConsole
             Engine.ValuationResult res3 = new Engine.ValuationResult(2.0, 2.1, 2.2, 2.3, 2.4);
 
             //테스트1, 객체
-            byte[] resb1 = Serialization.SerializationUtil.SerializeToByte(res1);
-            Engine.ValuationResult res1Returned = (Engine.ValuationResult)Serialization.SerializationUtil.DeserializeToObject(resb1);
+            byte[] resb1 = Tools.SerializationUtil.SerializeToByte(res1);
+            Engine.ValuationResult res1Returned = (Engine.ValuationResult)Tools.SerializationUtil.DeserializeToObject(resb1);
 
             //테스트2, List<객체> 
             List<Engine.ValuationResult> listRes = new List<Engine.ValuationResult>();
@@ -61,8 +61,8 @@ namespace StartConsole
             listRes.Add(res2);
             listRes.Add(res3);
 
-            byte[] listResB = Serialization.SerializationUtil.SerializeToByte(listRes);
-            List<Engine.ValuationResult> listResReturned = (List<Engine.ValuationResult>)Serialization.SerializationUtil.DeserializeToObject(listResB);
+            byte[] listResB = Tools.SerializationUtil.SerializeToByte(listRes);
+            List<Engine.ValuationResult> listResReturned = (List<Engine.ValuationResult>)Tools.SerializationUtil.DeserializeToObject(listResB);
 
             //테스트3, List<List<객체>> 
             List<Engine.ValuationResult> listRes2 = new List<Engine.ValuationResult>();
@@ -74,8 +74,8 @@ namespace StartConsole
             listOfListRes.Add(listRes);
             listOfListRes.Add(listRes2);
 
-            byte[] listOfListResB = Serialization.SerializationUtil.SerializeToByte(listOfListRes);
-            List<List<Engine.ValuationResult>> listOfListResReturned = (List<List<Engine.ValuationResult>>)Serialization.SerializationUtil.DeserializeToObject(listOfListResB);
+            byte[] listOfListResB = Tools.SerializationUtil.SerializeToByte(listOfListRes);
+            List<List<Engine.ValuationResult>> listOfListResReturned = (List<List<Engine.ValuationResult>>)Tools.SerializationUtil.DeserializeToObject(listOfListResB);
 
             Console.WriteLine();
         }
