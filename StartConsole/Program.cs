@@ -10,7 +10,7 @@ namespace StartConsole
     {
         static void Main(string[] args)
         {
-            SocketTest();            
+            SocketTest();
         }
 
         static void SocketTest()

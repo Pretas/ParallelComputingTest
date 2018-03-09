@@ -25,4 +25,55 @@ namespace Engine
             this.Var5 = var5;
         }
     }
+
+    public class Inforce
+    {
+        public int Seq;
+        public double Val001;
+        public double Val002;
+        public double Val003;
+        public double Val004;
+        public double Val005;
+        public double Val006;
+        public double Val007;
+        public double Val008;
+        public double Val009;
+        public double Val010;
+        public double Val011;
+        public double Val012;
+        public double Val013;
+        public double Val014;
+        public double Val015;
+    }
+
+    public class ScenarioSet
+    {
+        public string ID;
+        public string Asset;
+        public string ScenarioNo;
+        public Dictionary<int, double[]> scenarioData;
+    }
+
+    public class Calculator
+    {
+        public Inforce Rec;
+        public ScenarioSet Scn;
+        public int LoopNo;
+        public Dictionary<int, double> Res;
+
+        public Calculator(Inforce rec, ScenarioSet scn, int loopNo)
+        {
+            Rec = rec;
+            Scn = scn;
+            LoopNo = loopNo;
+        }
+
+        public void Calculate()
+        {
+            for (int i = 0; i < LoopNo; i++)
+            {
+
+            }
+        }
+    }
 }
