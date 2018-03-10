@@ -26,32 +26,20 @@ namespace Engine
         }
     }
 
-    public class Inforce
+    [Serializable]
+    public struct Inforce
     {
         public int Seq;
-        public double Val001;
-        public double Val002;
-        public double Val003;
-        public double Val004;
-        public double Val005;
-        public double Val006;
-        public double Val007;
-        public double Val008;
-        public double Val009;
-        public double Val010;
-        public double Val011;
-        public double Val012;
-        public double Val013;
-        public double Val014;
-        public double Val015;
+        public double[] RecData;
     }
 
-    public class ScenarioSet
+    [Serializable]
+    public struct ScenarioSet
     {
         public string ID;
         public string Asset;
-        public string ScenarioNo;
-        public Dictionary<int, double[]> scenarioData;
+        public string ScenarioNo;        
+        public double[] scenarioData;
     }
 
     public class Calculator
@@ -59,7 +47,7 @@ namespace Engine
         public Inforce Rec;
         public ScenarioSet Scn;
         public int LoopNo;
-        public Dictionary<int, double> Res;
+        public Dictionary<int, double[]> Res;
 
         public Calculator(Inforce rec, ScenarioSet scn, int loopNo)
         {
@@ -70,9 +58,23 @@ namespace Engine
 
         public void Calculate()
         {
-            for (int i = 0; i < LoopNo; i++)
-            {
+            for (int i = 1; i <= LoopNo; i++)
+            {   
+                double[] previousRes = new double[Rec.RecData.Length];
+                if (i == 1)
+                { previousRes = (double[])Rec.RecData.Clone(); }
+                else
+                { Res.TryGetValue(i, out previousRes); }
 
+                double[] currentRes = new double[Rec.RecData.Length];
+
+                Random rnd = new Random();
+                for (int j = 0; j < Rec.RecData.Length; j++)
+                {
+                    currentRes[j] = previousRes[j] * (rnd.NextDouble() + 0.5);
+                }
+
+                Res.Add(i, currentRes);
             }
         }
     }
