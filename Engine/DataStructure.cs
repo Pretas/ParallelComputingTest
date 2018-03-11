@@ -28,7 +28,7 @@ namespace Engine
         public void SumUp(double var1, double var2, double var3, double var4, double var5)
         {
             Var1 += var1;
-            Var2+= var2;
+            Var2 += var2;
             Var3 += var3;
             Var4 += var4;
             Var5 += var5;

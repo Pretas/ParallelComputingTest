@@ -6,6 +6,5 @@ D:\Repositories\ParallelComputingTest\Tools\obj\Debug\Tools.pdb
 D:\Repositories\ParallelComputingTest\Tools\obj\Debug\Tools.csprojResolveAssemblyReference.cache
 D:\Programming\ParallelComputingPilot\Tools\bin\Debug\Tools.dll
 D:\Programming\ParallelComputingPilot\Tools\bin\Debug\Tools.pdb
-D:\Programming\ParallelComputingPilot\Tools\obj\Debug\Tools.csprojResolveAssemblyReference.cache
 D:\Programming\ParallelComputingPilot\Tools\obj\Debug\Tools.dll
 D:\Programming\ParallelComputingPilot\Tools\obj\Debug\Tools.pdb

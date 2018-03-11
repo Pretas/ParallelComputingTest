@@ -12,9 +12,15 @@ namespace Engine
         public Module()
         {
             int scnCount = 1000;
+            int infCount = 100;
             ScenarioComposer sc = new ScenarioComposer(scnCount, 1200);
             InforceComposer ic = new InforceComposer(100000);
             Dictionary<int, ValuationResult> aggregatedResult = new Dictionary<int, ValuationResult>();
+
+            for (int i = 1; i <= infCount; i++)
+            {
+                aggregatedResult.Add(i, new ValuationResult(0.0, 0.0, 0.0, 0.0, 0.0));
+            }
 
             //시나리오 1000개 루프
             for (int i = 1; i <= scnCount; i++)
@@ -27,8 +33,7 @@ namespace Engine
                     scnOneNumber.Add(tempScn);
                 }
 
-                //인포스 루프         
-                int infCount = ic.GetInforceSet().Count;
+                //인포스 루프
                 for (int j = 1; j <= infCount; j++)
                 {
                     Inforce tempInforce = ic.GetInforceSet().Find(x => x.Seq == j);
@@ -38,6 +43,8 @@ namespace Engine
                     SummingUp.SumUpByInf(tempInforce.Seq, scnCount, sumUpRes, ref aggregatedResult);
                 }
             }
+
+            Console.WriteLine(@"end");
         }
 
         private static ValuationResult MeasureUp(Dictionary<int, double[]> res)
@@ -60,16 +67,7 @@ namespace Engine
     {
         public static void SumUpByInf(int seq, int scnCount, ValuationResult res, ref Dictionary<int, ValuationResult> totalRes)
         {
-            //ValuationResult valRes = new ValuationResult
-            if (totalRes[seq] == null)
-            {
-                ValuationResult tempRes = new ValuationResult(res.Var1 / scnCount, res.Var2 / scnCount, res.Var3 / scnCount, res.Var4 / scnCount, res.Var5 / scnCount);
-                totalRes.Add(seq, tempRes);
-            }
-            else
-            {
-                totalRes[seq].SumUp(res.Var1 / scnCount, res.Var2 / scnCount, res.Var3 / scnCount, res.Var4 / scnCount, res.Var5 / scnCount);
-            }
+            totalRes[seq].SumUp(res.Var1 / scnCount, res.Var2 / scnCount, res.Var3 / scnCount, res.Var4 / scnCount, res.Var5 / scnCount);
         }
     }
 
@@ -105,7 +103,7 @@ namespace Engine
                 { yield = yield + item.scenarioData[i - 1]; }
                 yield = yield / Scn.Count;
                 
-                for (int j = 0; j < Rec.RecData.Length; j++)
+                for (int j = 0; j < Rec.RecData.Length / 5; j++)
                 {
                     currentRes[j] = previousRes[j] * (1.0 + yield);
                 }
