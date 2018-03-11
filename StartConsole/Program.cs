@@ -10,7 +10,12 @@ namespace StartConsole
     {
         static void Main(string[] args)
         {
-            SocketTest();
+            CalcTest();
+        }
+
+        static void CalcTest()
+        {
+            Engine.Module md = new Engine.Module();
         }
 
         static void SocketTest()
