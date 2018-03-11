@@ -56,8 +56,8 @@ namespace Tools
 
     public class ServerSocket
     {
-        Socket sock;
-        Socket clientSock;
+        public Socket sock;
+        public Socket clientSock;
         
         public ServerSocket(int port)
         {
@@ -97,7 +97,7 @@ namespace Tools
 
     public class ClientSocket
     {
-        Socket sock;
+        public Socket sock;
         
         public ClientSocket(string serverIP, int port)
         {
@@ -108,7 +108,7 @@ namespace Tools
             IPEndPoint ep = new IPEndPoint(IPAddress.Parse(serverIP), port);
             sock.Connect(ep);
 
-            string cmd = string.Empty;
+            //string cmd = string.Empty;
             //byte[] receiverBuff = new byte[8192];
 
             //Console.WriteLine("Connected... Enter Q to exit");

@@ -9,12 +9,8 @@ namespace Engine
 {
     public class Module
     {
-        public Module()
-        {
-            int scnCount = 1000;
-            int infCount = 100;
-            ScenarioComposer sc = new ScenarioComposer(scnCount, 1200);
-            InforceComposer ic = new InforceComposer(100000);
+        public Module(int scnCount, int infCount, Engine.ScenarioComposer sc, Engine.InforceComposer ic)
+        {   
             Dictionary<int, ValuationResult> aggregatedResult = new Dictionary<int, ValuationResult>();
 
             for (int i = 1; i <= infCount; i++)

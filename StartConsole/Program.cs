@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace StartConsole
 {
@@ -15,7 +16,49 @@ namespace StartConsole
 
         static void CalcTest()
         {
-            Engine.Module md = new Engine.Module();
+            Thread t1 = new Thread(new ParameterizedThreadStart(HeadJob));
+            Thread t2 = new Thread(new ParameterizedThreadStart(WorkerJob));
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();                       
+        }
+
+        static void HeadJob(object args)
+        {
+            Tools.ServerSocket ss = new Tools.ServerSocket(7878);
+
+            Engine.ScenarioComposer sc = new Engine.ScenarioComposer(1000, 1200);
+                        
+            foreach(var item in sc.scnFullSet)
+            {
+                byte[] scnByte = Tools.SerializationUtil.SerializeToByte(item);
+                Tools.SendReceive.send(ss.clientSock, scnByte);
+            }
+
+            Engine.InforceComposer ic = new Engine.InforceComposer(100000);
+            byte[] infByte = Tools.SerializationUtil.SerializeToByte(ic.GetInforceSet());
+            Tools.SendReceive.send(ss.clientSock, infByte);
+        }
+
+        static void WorkerJob(object args)
+        {
+            Thread.Sleep(200);
+
+            Tools.ClientSocket cs = new Tools.ClientSocket(@"192.168.10.100", 7878);
+
+            Dictionary<string, List<Engine.ScenarioSet>> sc = new Dictionary<string, List<Engine.ScenarioSet>>();
+                        
+            for (int i = 0; i < 6; i++)
+            {
+                byte[] scnByte = (byte[])Tools.SendReceive.Receive(cs.sock);
+                List<Engine.ScenarioSet> scn = (List<Engine.ScenarioSet>)Tools.SerializationUtil.DeserializeToObject(scnByte);
+                sc.Add(scn[0].Asset, scn);
+            }
+
+            //Engine.Module md = new Engine.Module();
         }
 
         static void SocketTest()
