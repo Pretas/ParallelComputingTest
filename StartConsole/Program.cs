@@ -32,16 +32,21 @@ namespace StartConsole
 
             Engine.ScenarioComposer sc = new Engine.ScenarioComposer(1000, 1200);
                         
-            foreach(var item in sc.scnFullSet)
+            foreach(KeyValuePair<string, List<Engine.ScenarioSet>> item in sc.scnFullSet)
             {
-                byte[] scnByte = Tools.SerializationUtil.SerializeToByte(item);
-                Tools.SendReceive.send(ss.clientSock, scnByte);
+                Tools.SendReceive.SendGeneric(ss.clientSock, item.Key);
+                Tools.SendReceive.SendGeneric(ss.clientSock, item.Value);
             }
 
             Engine.InforceComposer ic = new Engine.InforceComposer(100000);
-            byte[] infByte = Tools.SerializationUtil.SerializeToByte(ic.GetInforceSet());
-            Tools.SendReceive.send(ss.clientSock, infByte);
+            Tools.SendReceive.SendGeneric(ss.clientSock, ic.GetInforceSet());
+
+            string endMessage = Tools.SendReceive.ReceiveSendGeneric<string>(ss.clientSock);
+
+            Console.Write(@"end");
         }
+
+
 
         static void WorkerJob(object args)
         {
@@ -53,12 +58,17 @@ namespace StartConsole
                         
             for (int i = 0; i < 6; i++)
             {
-                byte[] scnByte = (byte[])Tools.SendReceive.Receive(cs.sock);
-                List<Engine.ScenarioSet> scn = (List<Engine.ScenarioSet>)Tools.SerializationUtil.DeserializeToObject(scnByte);
-                sc.Add(scn[0].Asset, scn);
+                string assetName = Tools.SendReceive.ReceiveSendGeneric<string>(cs.sock);
+                List<Engine.ScenarioSet> scn = Tools.SendReceive.ReceiveSendGeneric<List<Engine.ScenarioSet>>(cs.sock);
+
+                sc.Add(assetName, scn);
             }
 
-            //Engine.Module md = new Engine.Module();
+            List<Engine.Inforce> ic = Tools.SendReceive.ReceiveSendGeneric<List<Engine.Inforce>>(cs.sock);
+
+            Tools.SendReceive.SendGeneric(cs.sock, @"ThankYou");
+
+            Console.Write(@"end");
         }
 
         static void SocketTest()

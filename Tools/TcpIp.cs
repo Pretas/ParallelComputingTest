@@ -11,6 +11,19 @@ namespace Tools
 {
     public class SendReceive
     {
+        public static void SendGeneric<T>(Socket clientSock, T obj)
+        {
+            byte[] dataByte = Tools.SerializationUtil.SerializeToByte(obj);
+            Tools.SendReceive.send(clientSock, dataByte);
+        }
+
+        public static T ReceiveSendGeneric<T>(Socket clientSock)
+        {
+            byte[] dataByte = (byte[])Tools.SendReceive.Receive(clientSock);
+            T data = (T)Tools.SerializationUtil.DeserializeToObject(dataByte);
+            return data;
+        }
+
         public static void send(Socket clientSock, byte[] data)
         {
             //글자수 전송
@@ -61,7 +74,7 @@ namespace Tools
         
         public ServerSocket(int port)
         {
-            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             // (2) 포트에 바인드
             IPEndPoint ep = new IPEndPoint(IPAddress.Any, port);
@@ -71,7 +84,7 @@ namespace Tools
             sock.Listen(10);
 
             // (4) 연결을 받아들여 새 소켓 생성 (하나의 연결만 받아들임)
-            Socket clientSock = sock.Accept();
+            clientSock = sock.Accept();
 
             //byte[] buff = new byte[8192];
             //while (!Console.KeyAvailable) // 키 누르면 종료
@@ -102,7 +115,7 @@ namespace Tools
         public ClientSocket(string serverIP, int port)
         {
             // (1) 소켓 객체 생성 (TCP 소켓)
-            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             // (2) 서버에 연결
             IPEndPoint ep = new IPEndPoint(IPAddress.Parse(serverIP), port);
