@@ -8,3 +8,9 @@ D:\Repositories\ParallelComputingTest\Engine\obj\Debug\Engine.csproj.CoreCompile
 D:\Repositories\ParallelComputingTest\Engine\obj\Debug\ParallelComputingTest.dll
 D:\Repositories\ParallelComputingTest\Engine\obj\Debug\ParallelComputingTest.pdb
 D:\Repositories\ParallelComputingTest\Engine\obj\Debug\Engine.csprojResolveAssemblyReference.cache
+D:\Repositories\ParallelComputingPilot\Engine\bin\Debug\ParallelComputingTest.dll
+D:\Repositories\ParallelComputingPilot\Engine\bin\Debug\ParallelComputingTest.pdb
+D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\Engine.csprojResolveAssemblyReference.cache
+D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\Engine.csproj.CoreCompileInputs.cache
+D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\ParallelComputingTest.dll
+D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\ParallelComputingTest.pdb

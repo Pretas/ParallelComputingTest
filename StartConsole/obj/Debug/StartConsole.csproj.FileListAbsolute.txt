@@ -19,3 +19,14 @@ D:\Repositories\ParallelComputingTest\StartConsole\bin\Debug\ParallelComputingTe
 D:\Repositories\ParallelComputingTest\StartConsole\bin\Debug\Tools.pdb
 D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\Tools.dll
 D:\Programming\ParallelComputingPilot\StartConsole\bin\Debug\Tools.pdb
+D:\Repositories\ParallelComputingPilot\StartConsole\bin\Debug\StartConsole.exe.config
+D:\Repositories\ParallelComputingPilot\StartConsole\bin\Debug\StartConsole.exe
+D:\Repositories\ParallelComputingPilot\StartConsole\bin\Debug\StartConsole.pdb
+D:\Repositories\ParallelComputingPilot\StartConsole\bin\Debug\ParallelComputingTest.dll
+D:\Repositories\ParallelComputingPilot\StartConsole\bin\Debug\Tools.dll
+D:\Repositories\ParallelComputingPilot\StartConsole\bin\Debug\ParallelComputingTest.pdb
+D:\Repositories\ParallelComputingPilot\StartConsole\bin\Debug\Tools.pdb
+D:\Repositories\ParallelComputingPilot\StartConsole\obj\Debug\StartConsole.csprojResolveAssemblyReference.cache
+D:\Repositories\ParallelComputingPilot\StartConsole\obj\Debug\StartConsole.csproj.CoreCompileInputs.cache
+D:\Repositories\ParallelComputingPilot\StartConsole\obj\Debug\StartConsole.exe
+D:\Repositories\ParallelComputingPilot\StartConsole\obj\Debug\StartConsole.pdb
