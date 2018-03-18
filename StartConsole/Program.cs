@@ -11,7 +11,22 @@ namespace StartConsole
     {
         static void Main(string[] args)
         {
-            CalcTest();
+            SingletonTest();
+        }
+
+        static void SingletonTest()
+        {
+            Tools.SeedManager sm1 = Tools.SeedManager.GetSeedManager();
+
+            Engine.InforceComposer ic = new Engine.InforceComposer(100000);
+            List<Engine.Inforce> inf = ic.GetInforceSet();
+            sm1.InsertSeedList(inf);
+            
+            Tools.SeedManager sm2 = Tools.SeedManager.GetSeedManager();
+
+            object allocSeeds = sm2.AllocateSeed(1, 10000);
+
+            Console.ReadKey();
         }
 
         static void CalcTest()

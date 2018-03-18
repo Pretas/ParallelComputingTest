@@ -36,18 +36,37 @@ namespace Engine
     }
 
     [Serializable]
-    public struct Inforce
+    public class Inforce : ICloneable
     {
         public int Seq;
         public double[] RecData;
+        
+        object ICloneable.Clone()
+        {
+            Inforce cloneInf = new Inforce();
+            cloneInf.Seq = this.Seq;
+
+            cloneInf.RecData = new double[this.RecData.Length];
+            for (int i = 0; i < this.RecData.Length; i++)
+            {
+                cloneInf.RecData[i] = this.RecData[i];
+            }
+
+            return cloneInf;
+        }
     }
 
     [Serializable]
-    public struct ScenarioSet
+    public struct ScenarioSet : ICloneable
     {
         public string ID;
         public string Asset;
         public int ScenarioNo;
         public double[] scenarioData;
+
+        object ICloneable.Clone()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
