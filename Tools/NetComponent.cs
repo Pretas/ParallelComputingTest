@@ -10,7 +10,8 @@ namespace Tools
     {
         private static SeedManager Sm;
         private SeedContainer SeedManaged = new SeedContainer();
-        //private bool isDoneLoading;
+
+        private bool CompleteLoadingYN;
 
         private static object SyncLock = new object();
         private static object SyncLock2 = new object();
@@ -37,9 +38,7 @@ namespace Tools
             return Sm;
         }
                 
-        public void InsertSeedList<T>(List<T> seedFromDB) 
-            where T : ICloneable
-        //public void InsertSeedList(object List<ICloneable> seedFromDB)
+        public void InsertSeedFromDB(List<ICloneable> seedFromDB, bool completeLoadingYN)
         {
             lock (SyncLock2)
             {
@@ -48,6 +47,8 @@ namespace Tools
                     ICloneable itemCopied = (ICloneable)item.Clone();
                     SeedManaged.SeedNotAllocated.Add(itemCopied);
                 }
+
+                CompleteLoadingYN = completeLoadingYN;
             }
         }
 
@@ -90,13 +91,14 @@ namespace Tools
                     SeedManaged.SeedNotAllocated.Add(itemCopied);
                     SeedManaged.SeedAllocated[nodeNo].Remove(item);
                 }
-            }            
+            }
         }
     }
 
     public class SeedContainer
     {
         public List<ICloneable> SeedNotAllocated = new List<ICloneable>();
+
         public Dictionary<int, List<ICloneable>> SeedAllocated = new Dictionary<int, List<ICloneable>>();
     }
 }
