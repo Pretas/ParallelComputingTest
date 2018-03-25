@@ -62,7 +62,7 @@ namespace Engine
     public class InforceComposer
     {
         public int InfCount { get; private set; }
-        List<Inforce> inf = new List<Inforce>();
+        List<Inforce> Inf = new List<Inforce>();
 
         public InforceComposer(int infCount)
         {
@@ -77,11 +77,11 @@ namespace Engine
                 {
                     rec.RecData[j] = 1000000.0;
                 }
-                inf.Add(rec);
+                Inf.Add(rec);
             }
         }
 
         public List<Inforce> GetInforceSet()
-        { return inf; }
+        { return Inf; }
     }
 }

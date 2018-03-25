@@ -8,53 +8,90 @@ namespace Tools
 {
     public class SeedManager
     {
-        private static SeedContainer SeedManaged;
-        private static object SyncLock = new object();
+        private static SeedManager Sm;
+        private SeedContainer SeedManaged = new SeedContainer();
+        //private bool isDoneLoading;
 
-        private static SeedContainer GetSeedContainer()
+        private static object SyncLock = new object();
+        private static object SyncLock2 = new object();
+        private static object SyncLock3 = new object();
+        private static object SyncLock4 = new object();
+        private static object SyncLock5 = new object();
+
+        protected SeedManager() { }
+
+        public static SeedManager GetSeedManager()
         {
-            // Support multithreaded applications through
-            // 'Double checked locking' pattern which (once
-            // the instance exists) avoids locking each
-            // time the method is invoked
-            if (SeedManaged == null)
+            // Support multithreaded applications through 'Double checked locking' pattern which (once the instance exists) avoids locking each time the method is invoked
+            if (Sm == null)
             {
                 lock (SyncLock)
                 {
-                    if (SeedManaged == null)
+                    if (Sm == null)
                     {
-                        SeedManaged = new SeedContainer();
+                        Sm = new SeedManager();
                     }
                 }
             }
 
-            return SeedManaged;
+            return Sm;
         }
-        
-        public void InsertSeedList(List<ICloneable> seedFromDB)
+                
+        public void InsertSeedList<T>(List<T> seedFromDB) 
+            where T : ICloneable
+        //public void InsertSeedList(object List<ICloneable> seedFromDB)
         {
-            SeedManaged.SeedNotAllocated.AddRange(seedFromDB);
+            lock (SyncLock2)
+            {
+                foreach (ICloneable item in seedFromDB)
+                {
+                    ICloneable itemCopied = (ICloneable)item.Clone();
+                    SeedManaged.SeedNotAllocated.Add(itemCopied);
+                }
+            }
         }
 
         public List<ICloneable> AllocateSeed(int toNodeNo, int unit)
         {
             List<ICloneable> seeds = new List<ICloneable>();
 
-            for (int i = 0; i < unit; i++)
-            {
-                ICloneable seed = (ICloneable)SeedManaged.SeedNotAllocated[i].Clone();
-                seeds.Add(seed);
-            }
+            int alloNo = Math.Min(unit, SeedManaged.SeedNotAllocated.Count);
 
-            SeedManaged.SeedAllocated.Add(toNodeNo, seeds);
+            lock(SyncLock3)
+            {
+                for (int i = 0; i < alloNo; i++)
+                {
+                    ICloneable seed = (ICloneable)SeedManaged.SeedNotAllocated[i].Clone();
+                    seeds.Add(seed);
+                    SeedManaged.SeedNotAllocated.RemoveAt(i);
+                }
+
+                SeedManaged.SeedAllocated.Add(toNodeNo, seeds);
+            }
 
             return seeds;
         }
 
         public void DeleteFinishedWork(int toNodeNo)
         {
-            SeedManaged.SeedAllocated.Remove(toNodeNo);
-        }       
+            lock(SyncLock4)
+            {
+                SeedManaged.SeedAllocated.Remove(toNodeNo);
+            }          
+        }
+
+        public void ReturnBackSeed(int nodeNo)
+        {
+            lock (SyncLock5)
+            {
+                foreach (ICloneable item in SeedManaged.SeedAllocated[nodeNo])
+                {
+                    ICloneable itemCopied = (ICloneable)item.Clone();
+                    SeedManaged.SeedNotAllocated.Add(itemCopied);
+                    SeedManaged.SeedAllocated[nodeNo].Remove(item);
+                }
+            }            
+        }
     }
 
     public class SeedContainer
