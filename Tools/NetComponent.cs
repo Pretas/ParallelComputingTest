@@ -9,8 +9,7 @@ namespace Tools
     public class SeedManager
     {
         private static SeedManager Sm;
-        private SeedContainer SeedManaged = new SeedContainer();
-
+        private SeedContainer Sc = new SeedContainer();
         private bool CompleteLoadingYN;
 
         private static object SyncLock = new object();
@@ -38,46 +37,41 @@ namespace Tools
             return Sm;
         }
                 
-        public void InsertSeedFromDB(List<ICloneable> seedFromDB, bool completeLoadingYN)
+        public void InsertSeed(Dictionary<int, List<ICloneable>> seedFrom, bool completeLoadingYN)
         {
             lock (SyncLock2)
             {
-                foreach (ICloneable item in seedFromDB)
+                foreach (var item in seedFrom)
                 {
-                    ICloneable itemCopied = (ICloneable)item.Clone();
-                    SeedManaged.SeedNotAllocated.Add(itemCopied);
+                    Sc.SeedNotAllocated.Add(item.Key, item.Value);
                 }
-
+                                
                 CompleteLoadingYN = completeLoadingYN;
             }
         }
 
-        public List<ICloneable> AllocateSeed(int toNodeNo, int unit)
+        public Dictionary<int, List<ICloneable>> AllocateSeed(int toNodeNo, int seedGroupIndex)
         {
-            List<ICloneable> seeds = new List<ICloneable>();
-
-            int alloNo = Math.Min(unit, SeedManaged.SeedNotAllocated.Count);
-
-            lock(SyncLock3)
+            lock (SyncLock3)
             {
-                for (int i = 0; i < alloNo; i++)
-                {
-                    ICloneable seed = (ICloneable)SeedManaged.SeedNotAllocated[i].Clone();
-                    seeds.Add(seed);
-                    SeedManaged.SeedNotAllocated.RemoveAt(i);
-                }
+                List<ICloneable> seeds;
+                Sc.SeedNotAllocated.TryGetValue(seedGroupIndex, out seeds);
 
-                SeedManaged.SeedAllocated.Add(toNodeNo, seeds);
+                //dic<씨드그룹번호, 씨드그룹> 로딩
+                Dictionary<int, List<ICloneable>> temp;                
+                Sc.SeedAllocated.TryGetValue(toNodeNo, out temp);
+                //씨드그룹 옮김
+                Sc.SeedAllocated.Add(toNodeNo, temp);
+
+                return temp;
             }
-
-            return seeds;
         }
 
         public void DeleteFinishedWork(int toNodeNo)
         {
             lock(SyncLock4)
             {
-                SeedManaged.SeedAllocated.Remove(toNodeNo);
+                //SeedManaged.SeedAllocated.Remove(toNodeNo);
             }          
         }
 
@@ -85,20 +79,20 @@ namespace Tools
         {
             lock (SyncLock5)
             {
-                foreach (ICloneable item in SeedManaged.SeedAllocated[nodeNo])
-                {
-                    ICloneable itemCopied = (ICloneable)item.Clone();
-                    SeedManaged.SeedNotAllocated.Add(itemCopied);
-                    SeedManaged.SeedAllocated[nodeNo].Remove(item);
-                }
+                //foreach (ICloneable item in SeedManaged.SeedAllocated[nodeNo])
+                //{
+                //    ICloneable itemCopied = (ICloneable)item.Clone();
+                //    SeedManaged.SeedNotAllocated.Add(itemCopied);
+                //    SeedManaged.SeedAllocated[nodeNo].Remove(item);
+                //}
             }
         }
     }
 
     public class SeedContainer
     {
-        public List<ICloneable> SeedNotAllocated = new List<ICloneable>();
-
-        public Dictionary<int, List<ICloneable>> SeedAllocated = new Dictionary<int, List<ICloneable>>();
+        public Dictionary<int, List<ICloneable>> SeedNotAllocated = new Dictionary<int, List<ICloneable>>();
+        public Dictionary<int, Dictionary<int, List<ICloneable>>> SeedAllocated = new Dictionary<int, Dictionary<int, List<ICloneable>>>();
+        public List<int> seedFinished = new List<int>();
     }
 }

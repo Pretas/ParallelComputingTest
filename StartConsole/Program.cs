@@ -10,9 +10,8 @@ namespace StartConsole
     class Program
     {
         static void Main(string[] args)
-        {
-            SingletonTest();
-        }
+        {            
+        }       
 
         static void SingletonTest()
         {
@@ -20,7 +19,7 @@ namespace StartConsole
 
             Engine.InforceComposer ic = new Engine.InforceComposer(100000);
             List<Engine.Inforce> inf = ic.GetInforceSet();
-            sm1.InsertSeedList(inf);
+            //sm1.InsertSeedList(inf);
             
             Tools.SeedManager sm2 = Tools.SeedManager.GetSeedManager();
 
