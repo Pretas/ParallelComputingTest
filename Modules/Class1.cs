@@ -75,6 +75,16 @@ namespace Modules
         {
             Console.WriteLine(string.Format("ReturnBack Seed to {0}", coreNo));
         }
+
+        public void InsertSeedIndex(SeedIndex si)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveSeedAllocated(List<SeedIndex> si)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class SeedContainerSCV : SeedContainer
@@ -101,6 +111,15 @@ namespace Modules
         {
             throw new NotImplementedException();
         }
-    }
 
+        public List<SeedIndex> GetAllStackedResult()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool CheckNeedSumUp()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

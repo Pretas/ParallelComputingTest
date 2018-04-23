@@ -134,23 +134,10 @@ namespace NetComponents
                 }
                 else if (jn == CommJobName.StackResult)
                 {
-
-                    List<SeedIndex>
-
-
-                    KeyValuePair<int, List<SeedIndex>> seed = (KeyValuePair<int, List<SeedIndex>>)input;
-                    Sm.SeedAllocated.Remove(seed.Key);
-                    Rm.ResStacked.AddRange(seed.Value);
                 }
                 else if (jn == CommJobName.AllocateSeed)
                 {
-                    int coreNo = (int)input;
-                    sm.AllocateSeed(coreNo, listSi);
-                    sm.
-
-                    KeyValuePair<int, List<SeedIndex>> seed = (KeyValuePair<int, List<SeedIndex>>)input;
-                    Sm.SeedAllocated.Add(seed.Key, seed.Value);
-                    Sm.RemoveSeedBef(seed.Value);
+                    
                 }
                 else if (jn == CommJobName.ProcessResult)
                 {
@@ -165,9 +152,7 @@ namespace NetComponents
                 }              
                 else if (jn == CommJobName.ReturnBackSeed)
                 {
-                    KeyValuePair<int, List<SeedIndex>> seed = (KeyValuePair<int, List<SeedIndex>>)input; Sm.SeedAllocated.Remove(seed.Key);
-                    Sm.SeedAllocated.Remove(seed.Key);
-                    Sm.SeedBef.AddRange(seed.Value);                    
+                                    
                 }
             }
 
@@ -181,37 +166,37 @@ namespace NetComponents
 
     public class TasksOnFrame
     {
-        public void DoHeadJob(InputManager im, SeedLoader sl, SeedManager sm, ResultManager rm, ExceptionManager em, Communicator comm)
+        public void DoHeadJob(IInputLoader il, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
         {
-            try
-            {
-                im.LoadInput();
-                im.CompleteLoadingYN = true;
+            //try
+            //{
+            //    im.LoadInput();
+            //    im.CompleteLoadingYN = true;
 
-                bool completeYN = false;
-                while (!completeYN)
-                {
-                    //Seed 로딩
-                    if (sl.CheckLackOfSeed())
-                    {
-                        SeedIndexCompart sic = sl.GetSeedRequired(sm);
-                        sl.LoadSeed(sic, ref sm);
-                    }
-                    // 결과물 DB에 전송
-                    if(rm.ResStacked.Count >= rm.SumUpPoint)
-                    {
-                        // 집계
-                        ResultContainer res = rm.SumUp();
-                        {
-                            rm.ResStacked.Clear();
-                            rm.RC.Clear();
-                        }
+            //    bool completeYN = false;
+            //    while (!completeYN)
+            //    {
+            //        //Seed 로딩
+            //        if (sl.CheckLackOfSeed())
+            //        {
+            //            SeedIndexCompart sic = sl.GetSeedRequired(sm);
+            //            sl.LoadSeed(sic, ref sm);
+            //        }
+            //        // 결과물 DB에 전송
+            //        if(rm.ResStacked.Count >= rm.SumUpPoint)
+            //        {
+            //            // 집계
+            //            ResultContainer res = rm.SumUp();
+            //            {
+            //                rm.ResStacked.Clear();
+            //                rm.RC.Clear();
+            //            }
 
-                        // 업로드
-                        // sm, rm 삭제
-                    }
+            //            // 업로드
+            //            // sm, rm 삭제
+            //        }
                     
-                }
+            //    }
                 
         //  * InputManager im = InputManager.GetIM()
         //  * InputContainer ic = LoadInputFromDB()
@@ -227,11 +212,11 @@ namespace NetComponents
         //  * em.Error0.Add
         //  * throw new Exception​
 
-            }
-            catch
-            { }
-            finally
-            { }
+            //}
+            //catch
+            //{ }
+            //finally
+            //{ }
 
         //    
         }
@@ -243,8 +228,8 @@ namespace NetComponents
         public List<int> type1Errors = new List<int>(); // Upper에러 발생시 코어이름 등재함
     }
 
-    public class Comm
-    {
+    //public class Comm
+    //{
         //public static object ShiftData(CommJobName jn, object source)
         //{
         //    object syncLock = new object();
@@ -391,4 +376,3 @@ namespace NetComponents
     //    public Dictionary<int, Dictionary<int, List<ICloneable>>> SeedAllocated = new Dictionary<int, Dictionary<int, List<ICloneable>>>();
     //    public List<int> seedFinished = new List<int>();
     //}
-}
