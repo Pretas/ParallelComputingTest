@@ -6,53 +6,72 @@ using System.Threading.Tasks;
 
 namespace NetComponents
 {
-    abstract public class InputManager
+    public class Singleton
     {
-        private static InputManager IM;
-        protected InputManager() { }
-        private static object SyncLock = new object();
+        protected static Singleton ST;
+        protected Singleton() { }
+        protected static object SyncLock = new object();
 
-        public static InputManager GetInputManager()
-        { return null; }
+        public static Singleton GetSingleton()
+        {
+            // Support multithreaded applications through 'Double checked locking' pattern which (once the instance exists) avoids locking each time the method is invoked
+            if (ST == null)
+            {
+                lock (SyncLock)
+                {
+                    if (ST == null)
+                    {
+                        ST = new Singleton();
+                    }
+                }
+            }
 
-        public InputContainer IC;
-        //abstract public void Insert(InputContainer IC);
-        abstract public void LoadInput();
-
-        public bool CompleteLoadingYN = false;
+            return ST;
+        }
+    }
+    
+    public interface IInputLoader
+    {
+        void LoadInput();
     }
 
     abstract public class InputContainer { }
 
-    abstract public class SeedLoader
+    public interface ISeedLoader
     {
-        // 예시
-        // dic<int(polIndex), tuple<int(sNo), int(eNo)>> PolList : 초기화 때 세팅
-        // dic<int(scnIndex), string(coeffScn)> ScnList : 초기화 때 세팅
-        // int sPol, ePol, cPol
-        // int sScn, eScn, cScn
-
-        abstract public bool CheckLackOfSeed(); //시드 개수가 부족한지 체크
-        abstract public SeedIndexCompart GetSeedRequired(SeedManager sm); //로딩할 시드에서 기존에 저장되어 있는 시드 이외의 것을 추림        
-        abstract public SeedContainer LoadSeed(SeedIndexCompart sic, ref SeedManager sm); // 시드가 필요한지 체크, 그 중에 로드해야 할 시드만 고르고, 로딩하여 SeedManager에 저장, current 반영
+        void Init(); //초기 불러와야 할 인풋들 리스트 세팅
+        bool CheckLackOfSeed(); //시드 개수가 부족한지 체크
+        SeedIndexCompart GetSeedRequired(ISeedManager sm); //로딩할 시드에서 기존에 저장되어 있는 시드 이외의 것을 추림        
+        SeedContainer LoadSeed(SeedIndexCompart sic, ref ISeedManager sm); // 시드가 필요한지 체크, 그 중에 로드해야 할 시드만 고르고, 로딩하여 SeedManager에 저장, current 반영
     }
 
-    abstract public class SeedManager
+    public interface ISeedManager
     {
-        private static SeedManager SM;
-        protected SeedManager() { }
-        private static object SyncLock = new object();
-
-        public static SeedManager GetSeedManager()
-        { return null;        }
-
-        public SeedContainer SC;
-        public List<SeedIndex> SeedBef;
-        public Dictionary<int, List<SeedIndex>> SeedAllocated;
-        abstract public void Insert(SeedContainer sc);
-        abstract public void RemoveSeedBef(List<SeedIndex> si);
-        public bool CompleteLoadingYN = false;
+        void InsertSeedIndex(SeedIndex si);
+        void InsertSeed(SeedContainer sc);
+        void AllocateSeed(int coreNo, List<SeedIndex> si);
+        void ReturnBackSeed(int coreNo, List<SeedIndex> si);
+        void RemoveSeedAllocated(List<SeedIndex> si);
     }
+
+    
+
+    //abstract public class SeedManager
+    //{
+    //    private static SeedManager SM;
+    //    protected SeedManager() { }
+    //    private static object SyncLock = new object();
+
+    //    public static SeedManager GetSeedManager()
+    //    { return null;        }
+
+    //    public SeedContainer SC;
+    //    public List<SeedIndex> SeedBef;
+    //    public Dictionary<int, List<SeedIndex>> SeedAllocated;
+    //    abstract public void Insert(SeedContainer sc);
+    //    abstract public void RemoveSeedBef(List<SeedIndex> si);
+    //    public bool CompleteLoadingYN = false;
+    //}
 
     abstract public class SeedContainer
     { }
@@ -65,86 +84,85 @@ namespace NetComponents
     abstract public class SeedIndexCompart
     { }
 
-    abstract public class ResultContainer
+    public interface IResultManager
     {
-        internal void Clear()
-        {
-            throw new NotImplementedException();
-        }
+        void SumUp(Result source, ref Result baseResult);
+        void ClearIndex();
+        List<SeedIndex> GetAllStackedResult();
+        bool CheckNeedSumUp();
     }
 
-    abstract public class ResultManager
-    {
-        private static ResultManager RM;
-        protected ResultManager() { }
-        private static object SyncLock = new object();
-
-        public static ResultManager GetResultManager()
-        {
-            return null;
-        }
-        public ResultContainer RC;
-        public List<SeedIndex> ResStacked;
-
-        public int SumUpPoint { get; set; }
-
-        abstract public ResultContainer SumUp();
-    }
+    public abstract class Result
+    { }
     
-    public class Communicator
+    
+    public class Communicator : Singleton
     {
-        private static Communicator Comm;
-        protected Communicator() { }
-        private static object SyncLock = new object();
         private static object SyncLock2 = new object();
 
-        private SeedManager Sm;
-        private ResultManager Rm;
+        //public static Communicator GetSingleton(ISeedManager sm, IResultManager rm)
+        //{
+        //    // Support multithreaded applications through 'Double checked locking' pattern which (once the instance exists) avoids locking each time the method is invoked
+        //    if (ST == null)
+        //    {
+        //        lock (SyncLock)
+        //        {
+        //            if (ST == null)
+        //            {
+                        
+        //                ST = new Singleton();
+        //                this. ST.sm
+        //                Comm.Sm = sm;
+        //                Comm.Rm = rm;
+        //            }
+        //        }
+        //    }
 
-        public static Communicator GetSingleton(SeedManager sm, ResultManager rm)
+        //    return Comm;
+        //}
+
+        public object Communicate(CommJobName jn, ref ISeedManager sm, ref IResultManager rm, object input)
         {
-            // Support multithreaded applications through 'Double checked locking' pattern which (once the instance exists) avoids locking each time the method is invoked
-            if (Comm == null)
-            {
-                lock (SyncLock)
-                {
-                    if (Comm == null)
-                    {
-                        Comm = new Communicator();
-                        Comm.Sm = sm;
-                        Comm.Rm = rm;
-                    }
-                }
-            }
+            object res = new object();
 
-            return Comm;
-        }
-
-        public void Communicate(CommJobName jn, object input)
-        {
             lock(SyncLock2)
             {
                 if (jn == CommJobName.RegisterSeed)
                 {
                     SeedIndex si = (SeedIndex)input;
-                    Sm.SeedBef.Add(si);
-                }
-                else if (jn == CommJobName.ProcessResult)
-                {
-                    Rm.ResStacked.Clear();
-                }
-                else if (jn == CommJobName.AllocateSeed)
-                {
-                    KeyValuePair<int, List<SeedIndex>> seed = (KeyValuePair<int, List<SeedIndex>>)input;
-                    Sm.SeedAllocated.Add(seed.Key, seed.Value);
-                    Sm.RemoveSeedBef(seed.Value);
+                    sm.InsertSeedIndex(si);
                 }
                 else if (jn == CommJobName.StackResult)
                 {
+
+                    List<SeedIndex>
+
+
                     KeyValuePair<int, List<SeedIndex>> seed = (KeyValuePair<int, List<SeedIndex>>)input;
                     Sm.SeedAllocated.Remove(seed.Key);
                     Rm.ResStacked.AddRange(seed.Value);
                 }
+                else if (jn == CommJobName.AllocateSeed)
+                {
+                    int coreNo = (int)input;
+                    sm.AllocateSeed(coreNo, listSi);
+                    sm.
+
+                    KeyValuePair<int, List<SeedIndex>> seed = (KeyValuePair<int, List<SeedIndex>>)input;
+                    Sm.SeedAllocated.Add(seed.Key, seed.Value);
+                    Sm.RemoveSeedBef(seed.Value);
+                }
+                else if (jn == CommJobName.ProcessResult)
+                {
+                    bool yn = rm.CheckNeedSumUp();
+                    if (yn)
+                    {
+                        List<SeedIndex> si = rm.GetAllStackedResult();
+                        rm.ClearIndex();
+                        sm.RemoveSeedAllocated(si);
+                    }                    
+                    rm.ClearIndex();
+                }              
                 else if (jn == CommJobName.ReturnBackSeed)
                 {
                     KeyValuePair<int, List<SeedIndex>> seed = (KeyValuePair<int, List<SeedIndex>>)input; Sm.SeedAllocated.Remove(seed.Key);
@@ -152,6 +170,8 @@ namespace NetComponents
                     Sm.SeedBef.AddRange(seed.Value);                    
                 }
             }
+
+            return res;
         }
     }
 
