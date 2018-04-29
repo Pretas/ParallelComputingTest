@@ -14,3 +14,4 @@ D:\Repositories\ParallelComputingPilot\Tools\obj\Debug\Tools.csproj.CoreCompileI
 D:\Repositories\ParallelComputingPilot\Tools\obj\Debug\Tools.dll
 D:\Repositories\ParallelComputingPilot\Tools\obj\Debug\Tools.pdb
 D:\Programming\ParallelComputingPilot\Tools\obj\Debug\Tools.csprojResolveAssemblyReference.cache
+D:\Repositories\ParallelComputingPilot\Tools\obj\Debug\Tools.csprojResolveAssemblyReference.cache

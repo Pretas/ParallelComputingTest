@@ -10,22 +10,66 @@ namespace StartConsole
     class Program
     {
         static void Main(string[] args)
-        {            
-        }       
+        {
+            SendDataTest(0);                
+        }
+
+        private static void SendDataTest(int coreNo)
+        {
+            if (coreNo == 0)
+            {
+                //객체 생성
+                Dictionary<int, double[]> testData = new Dictionary<int, double[]>();
+                for (int i = 0; i < 1000; i++)
+                {
+                    double[] scn = new double[1200];
+                    for (int j = 0; j < 1200; j++)
+                    {
+                        Random rn = new Random();
+                        scn[j] = rn.NextDouble();
+                    }
+                    testData.Add(i, scn);
+                }
+
+                //serialize
+                byte[] dataByte = Tools.SerializationUtil.SerializeToByte(testData);
+                
+                //Client Socket 생성
+                Tools.ClientSocket cs = new Tools.ClientSocket(@"192.168.10.101", 7878);
+
+                //send
+                Tools.SendReceive.send(cs.sock, dataByte);
+
+                Console.ReadLine();
+            }
+            else if (coreNo == 1)
+            {
+                //ServerSocket Socket 생성
+                Tools.ServerSocket sc = new Tools.ServerSocket(7878);
+
+                //receive
+                byte[] dataByte = Tools.SendReceive.Receive(sc.clientSock);
+
+                //Deserialize
+                Dictionary<int, double[]> scnSet = (Dictionary<int, double[]>)Tools.SerializationUtil.DeserializeToObject(dataByte);
+
+                Console.ReadLine();
+            }
+        }
 
         static void SingletonTest()
         {
-            Tools.SeedManager sm1 = Tools.SeedManager.GetSeedManager();
+            //Tools.SeedManager sm1 = Tools.SeedManager.GetSeedManager();
 
-            Engine.InforceComposer ic = new Engine.InforceComposer(100000);
-            List<Engine.Inforce> inf = ic.GetInforceSet();
-            //sm1.InsertSeedList(inf);
+            //Engine.InforceComposer ic = new Engine.InforceComposer(100000);
+            //List<Engine.Inforce> inf = ic.GetInforceSet();
+            ////sm1.InsertSeedList(inf);
             
-            Tools.SeedManager sm2 = Tools.SeedManager.GetSeedManager();
+            //Tools.SeedManager sm2 = Tools.SeedManager.GetSeedManager();
 
-            object allocSeeds = sm2.AllocateSeed(1, 10000);
+            //object allocSeeds = sm2.AllocateSeed(1, 10000);
 
-            Console.ReadKey();
+            //Console.ReadKey();
         }
 
         static void CalcTest()

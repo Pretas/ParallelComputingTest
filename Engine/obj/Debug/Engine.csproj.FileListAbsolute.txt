@@ -14,3 +14,4 @@ D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\Engine.csproj.CoreCompil
 D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\ParallelComputingTest.dll
 D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\ParallelComputingTest.pdb
 D:\Programming\ParallelComputingPilot\Engine\obj\Debug\Engine.csprojResolveAssemblyReference.cache
+D:\Repositories\ParallelComputingPilot\Engine\obj\Debug\Engine.csprojResolveAssemblyReference.cache

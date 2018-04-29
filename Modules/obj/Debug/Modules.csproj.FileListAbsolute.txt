@@ -1,0 +1,8 @@
+D:\Repositories\ParallelComputingPilot\Modules\bin\Debug\Modules.dll
+D:\Repositories\ParallelComputingPilot\Modules\bin\Debug\Modules.pdb
+D:\Repositories\ParallelComputingPilot\Modules\bin\Debug\Tools.dll
+D:\Repositories\ParallelComputingPilot\Modules\bin\Debug\Tools.pdb
+D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.csprojResolveAssemblyReference.cache
+D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.csproj.CoreCompileInputs.cache
+D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.dll
+D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.pdb
