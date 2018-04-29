@@ -29,49 +29,38 @@ namespace NetComponents
             return ST;
         }
     }
-    
-    public interface IInputLoader
+
+    public interface IInputManager
     {
         void LoadInput();
+        InputContainer GetInput();
+        void SetCompleteLoading();
+        bool GetCompleteLoading();
     }
 
     abstract public class InputContainer { }
 
     public interface ISeedLoader
     {
-        void Init(); //초기 불러와야 할 인풋들 리스트 세팅
-        bool CheckLackOfSeed(); //시드 개수가 부족한지 체크
-        SeedIndexCompart GetSeedRequired(ISeedManager sm); //로딩할 시드에서 기존에 저장되어 있는 시드 이외의 것을 추림        
-        SeedContainer LoadSeed(SeedIndexCompart sic, ref ISeedManager sm); // 시드가 필요한지 체크, 그 중에 로드해야 할 시드만 고르고, 로딩하여 SeedManager에 저장, current 반영
+        // 초기화, 불러와야 할 총 인풋리스트 저장
+        void Init();
+        // 시드 개수가 부족한지 체크
+        bool CheckLackOfSeed();
+        // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
+        Tuple<List<SeedIndex>, SeedContainer> LoadSeed();
+        // 모든 시드가 로딩 되었으면 true
+        bool IsFinished();
     }
 
     public interface ISeedManager
     {
-        void InsertSeedIndex(SeedIndex si);
-        void InsertSeed(SeedContainer sc);
-        void AllocateSeed(int coreNo, List<SeedIndex> si);
-        void ReturnBackSeed(int coreNo, List<SeedIndex> si);
-        void RemoveSeedAllocated(List<SeedIndex> si);
+        void InsertSeed(List<SeedIndex> si, SeedContainer sc);
+        void AllocateSeed(int coreNo);
+        void ReturnBackSeed(int coreNo);
+        void RemoveSeedAllocated(int coreNo, List<SeedIndex> si);
+        // 배분되기 전의 시드, 배분된 시드 모두가 비어있으면
+        bool IsEmpty();
     }
-
-    
-
-    //abstract public class SeedManager
-    //{
-    //    private static SeedManager SM;
-    //    protected SeedManager() { }
-    //    private static object SyncLock = new object();
-
-    //    public static SeedManager GetSeedManager()
-    //    { return null;        }
-
-    //    public SeedContainer SC;
-    //    public List<SeedIndex> SeedBef;
-    //    public Dictionary<int, List<SeedIndex>> SeedAllocated;
-    //    abstract public void Insert(SeedContainer sc);
-    //    abstract public void RemoveSeedBef(List<SeedIndex> si);
-    //    public bool CompleteLoadingYN = false;
-    //}
 
     abstract public class SeedContainer
     { }
@@ -86,19 +75,24 @@ namespace NetComponents
 
     public interface IResultManager
     {
-        void SumUp(Result source, ref Result baseResult);
-        void ClearIndex();
-        List<SeedIndex> GetAllStackedResult();
+        void StackResult(List<SeedIndex> resIndex, List<Result> resReal);
         bool CheckNeedSumUp();
+        void ClearResult();
+        void SumUp();
+        void UploadResult();
+        // 쌓여있는 결과가 없으면
+        bool IsEmpty();
     }
 
     public abstract class Result
     { }
-    
-    
+
+    public enum CommJobName
+    { InsertSeed, AllocateSeed, ReturnBackSeed, StackResult, UploadResult }
+
     public class Communicator : Singleton
     {
-        private static object SyncLock2 = new object();
+        private static object SyncLockComm = new object();
 
         //public static Communicator GetSingleton(ISeedManager sm, IResultManager rm)
         //{
@@ -109,7 +103,7 @@ namespace NetComponents
         //        {
         //            if (ST == null)
         //            {
-                        
+
         //                ST = new Singleton();
         //                this. ST.sm
         //                Comm.Sm = sm;
@@ -121,115 +115,155 @@ namespace NetComponents
         //    return Comm;
         //}
 
-        public object Communicate(CommJobName jn, ref ISeedManager sm, ref IResultManager rm, object input)
+        public void Communicate(CommJobName jn, ref ISeedManager sm, ref IResultManager rm, object input)
         {
             object res = new object();
 
-            lock(SyncLock2)
+            lock (SyncLockComm)
             {
-                if (jn == CommJobName.RegisterSeed)
+                if (jn == CommJobName.InsertSeed)
                 {
-                    SeedIndex si = (SeedIndex)input;
-                    sm.InsertSeedIndex(si);
-                }
-                else if (jn == CommJobName.StackResult)
-                {
+                    object[] input2 = (object[])input;
+                    List<SeedIndex> si = (List<SeedIndex>)input2[0];
+                    SeedContainer sc = (SeedContainer)input2[1];
+
+                    sm.InsertSeed(si, sc);
                 }
                 else if (jn == CommJobName.AllocateSeed)
                 {
-                    
+                    int coreNo = (int)input;
+                    sm.AllocateSeed(coreNo);
                 }
-                else if (jn == CommJobName.ProcessResult)
+                else if (jn == CommJobName.ReturnBackSeed)
+                {
+                    int coreNo = (int)input;
+                    sm.ReturnBackSeed(coreNo);
+                }
+                else if (jn == CommJobName.StackResult)
+                {
+                    object[] input2 = (object[])input;
+                    int coreNo = (int)input2[0];
+                    List<SeedIndex> resIndex = (List<SeedIndex>)input2[1];
+                    List<Result> resReal = (List<Result>)input2[2];
+
+                    rm.StackResult(resIndex, resReal);
+                    sm.RemoveSeedAllocated(coreNo, resIndex);
+                }
+                else if (jn == CommJobName.UploadResult)
                 {
                     bool yn = rm.CheckNeedSumUp();
                     if (yn)
                     {
-                        List<SeedIndex> si = rm.GetAllStackedResult();
-                        rm.ClearIndex();
-                        sm.RemoveSeedAllocated(si);
-                    }                    
-                    rm.ClearIndex();
-                }              
-                else if (jn == CommJobName.ReturnBackSeed)
-                {
-                                    
+                        rm.SumUp();
+                        rm.ClearResult();
+                        rm.UploadResult();
+                    }
                 }
             }
-
-            return res;
-        }
-    }
-
-
-    public enum CommJobName
-    { RegisterSeed, ProcessResult, AllocateSeed, StackResult, ReturnBackSeed }
-
-    public class TasksOnFrame
-    {
-        public void DoHeadJob(IInputLoader il, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
-        {
-            //try
-            //{
-            //    im.LoadInput();
-            //    im.CompleteLoadingYN = true;
-
-            //    bool completeYN = false;
-            //    while (!completeYN)
-            //    {
-            //        //Seed 로딩
-            //        if (sl.CheckLackOfSeed())
-            //        {
-            //            SeedIndexCompart sic = sl.GetSeedRequired(sm);
-            //            sl.LoadSeed(sic, ref sm);
-            //        }
-            //        // 결과물 DB에 전송
-            //        if(rm.ResStacked.Count >= rm.SumUpPoint)
-            //        {
-            //            // 집계
-            //            ResultContainer res = rm.SumUp();
-            //            {
-            //                rm.ResStacked.Clear();
-            //                rm.RC.Clear();
-            //            }
-
-            //            // 업로드
-            //            // sm, rm 삭제
-            //        }
-                    
-            //    }
-                
-        //  * InputManager im = InputManager.GetIM()
-        //  * InputContainer ic = LoadInputFromDB()
-        //  * im.Insert(ic)
-        //  * im.CompleteLoadingYN = true
-        //  * SeedLoadingState sls 생성
-        //  *Result resBase 생성
-        //  *While(!completeYN & em.Error1.Count < em.UpperCount)
-        //    * LoadFromDB()
-        //    * UpLoadToDB(ref resBase)
-        //    * CheckError()
-        //* Catch
-        //  * em.Error0.Add
-        //  * throw new Exception​
-
-            //}
-            //catch
-            //{ }
-            //finally
-            //{ }
-
-        //    
         }
     }
 
     public class ExceptionManager
     {
-        public bool type0YN = false; // Head or Lower의 에러가 발생시 true
+        public bool HasType0Error = false; // Head or Lower의 에러가 발생시 true
         public List<int> type1Errors = new List<int>(); // Upper에러 발생시 코어이름 등재함
     }
 
-    //public class Comm
-    //{
+    public class ActionsByRole
+    {
+        public void DoHeadJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
+        {
+            try
+            {
+                im.LoadInput();
+                im.SetCompleteLoading();
+
+                sl.Init();
+
+                bool isCompleted = false;
+                while (!isCompleted)
+                {
+                    //디비에서 씨드로딩
+                    if (sl.CheckLackOfSeed())
+                    {
+                        Tuple<List<SeedIndex>, SeedContainer> seedLoaded = sl.LoadSeed();
+                        comm.Communicate(CommJobName.InsertSeed, ref sm, ref rm, seedLoaded);
+                    }
+
+                    //결과를 디비에 업로드
+                    comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
+
+                    //Lower들에게 에러 났는지 체크
+                    if (em.type1Errors.Count > 0)
+                    {
+                        foreach (int coreNo in em.type1Errors)
+                        {
+                            comm.Communicate(CommJobName.ReturnBackSeed, ref sm, ref rm, coreNo);
+                        }
+
+                        em.type1Errors.Clear();
+                    }
+
+                    //seed 모두 로딩되면, sm.Allo 비었으면, sm.NotAllo 비었으면, rm.Finish이면
+                    isCompleted = sl.IsFinished() && sm.IsEmpty() && rm.IsEmpty();
+                }
+            }
+            catch
+            {
+                em.HasType0Error = true;
+                throw new Exception();
+            }
+        }
+
+        public void DoUpperJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket lowerSock)
+        {
+            try
+            {
+                // 인풋 전달
+                while (true)
+                {
+                    if (im.GetCompleteLoading())
+                    {
+                        Tools.SendReceive.SendGeneric<bool>(lowerSock, true);
+                        InputContainer input = im.GetInput();
+                        Tools.SendReceive.SendGeneric<InputContainer>(lowerSock, input);
+                        break;
+                    }
+                }
+
+                // 시드 전송
+                while (true)
+                {
+                    bool isNeedSeed = (bool)Tools.SendReceive.ReceiveGeneric<bool>(lowerSock);
+                    if (!sm.IsEmpty()) { }
+                }
+
+
+                //while               
+                //  시드 요청 받음
+                //  시드 있는지 전달
+                //  시드 있으면
+                //    시드 전달
+                //    시드 state 변경
+                //  결과 전달받을 것 있는지 받음
+                //  전달받을 것이 있다면
+                //    결과 받음
+                //    결과 저장
+                //  sl의 로딩 끝 & sm에서 끝 전송            
+
+
+            }
+            catch
+            { }
+
+        }
+    }
+}
+
+
+
+        //public class Comm
+        //{
         //public static object ShiftData(CommJobName jn, object source)
         //{
         //    object syncLock = new object();
@@ -282,8 +316,7 @@ namespace NetComponents
         //    return returnData;
 
         //}
-           
-    }
+
 
 
 

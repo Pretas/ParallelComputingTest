@@ -23,9 +23,9 @@ namespace StartConsole
                 for (int i = 0; i < 1000; i++)
                 {
                     double[] scn = new double[1200];
+                    Random rn = new Random();
                     for (int j = 0; j < 1200; j++)
-                    {
-                        Random rn = new Random();
+                    {                        
                         scn[j] = rn.NextDouble();
                     }
                     testData.Add(i, scn);
@@ -99,7 +99,7 @@ namespace StartConsole
             Engine.InforceComposer ic = new Engine.InforceComposer(100000);
             Tools.SendReceive.SendGeneric(ss.clientSock, ic.GetInforceSet());
 
-            string endMessage = Tools.SendReceive.ReceiveSendGeneric<string>(ss.clientSock);
+            string endMessage = Tools.SendReceive.ReceiveGeneric<string>(ss.clientSock);
 
             Console.Write(@"end");
         }
@@ -116,13 +116,13 @@ namespace StartConsole
                         
             for (int i = 0; i < 6; i++)
             {
-                string assetName = Tools.SendReceive.ReceiveSendGeneric<string>(cs.sock);
-                List<Engine.ScenarioSet> scn = Tools.SendReceive.ReceiveSendGeneric<List<Engine.ScenarioSet>>(cs.sock);
+                string assetName = Tools.SendReceive.ReceiveGeneric<string>(cs.sock);
+                List<Engine.ScenarioSet> scn = Tools.SendReceive.ReceiveGeneric<List<Engine.ScenarioSet>>(cs.sock);
 
                 sc.Add(assetName, scn);
             }
 
-            List<Engine.Inforce> ic = Tools.SendReceive.ReceiveSendGeneric<List<Engine.Inforce>>(cs.sock);
+            List<Engine.Inforce> ic = Tools.SendReceive.ReceiveGeneric<List<Engine.Inforce>>(cs.sock);
 
             Tools.SendReceive.SendGeneric(cs.sock, @"ThankYou");
 

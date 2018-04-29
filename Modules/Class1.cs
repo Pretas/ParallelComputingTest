@@ -4,14 +4,29 @@ using System.Collections.Generic;
 
 namespace Modules
 {
-    public class InputManagerSCV : Singleton, IInputLoader
+    public class InputManagerSCV : Singleton, IInputManager
     {
         public InputContainerSCV IC;
         public bool CompleteLoadingYN = false;
 
+        public bool GetCompleteLoading()
+        {
+            throw new NotImplementedException();
+        }
+
+        public InputContainer GetInput()
+        {
+            throw new NotImplementedException();
+        }
+
         public void LoadInput()
         {
             Console.WriteLine("Load From DB");
+        }
+
+        public void SetCompleteLoading()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -34,18 +49,26 @@ namespace Modules
         {
             Console.WriteLine("Check Lack of Seed, return boolType");
             return true;
+        }       
+
+        public void InsertSeedRequired()
+        {
+            throw new NotImplementedException();
         }
 
-        public SeedIndexCompart GetSeedRequired(ISeedManager sm)
+        public void LoadSeed()
         {
-            Console.WriteLine("Check Lack of Seed, return boolType");
-            return new SeedIndexCompartSCV();
+            throw new NotImplementedException();
         }
 
-        public SeedContainer LoadSeed(SeedIndexCompart sic, ref ISeedManager sm)
+        Tuple<List<SeedIndex>, SeedContainer> ISeedLoader.LoadSeed()
         {
-            Console.WriteLine("Load Seed From DB, return SeedContainerType");
-            return new SeedContainerSCV();
+            throw new NotImplementedException();
+        }
+
+        public bool IsFinished()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -85,6 +108,31 @@ namespace Modules
         {
             throw new NotImplementedException();
         }
+
+        public void InsertSeed(List<SeedIndex> si, SeedContainer sc)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AllocateSeed(int coreNo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReturnBackSeed(int coreNo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveSeedAllocated(int coreNo, List<SeedIndex> si)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsEmpty()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class SeedContainerSCV : SeedContainer
@@ -118,6 +166,31 @@ namespace Modules
         }
 
         public bool CheckNeedSumUp()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StackResult(List<SeedIndex> resIndex, List<Result> resReal)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ClearResult()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SumUp()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UploadResult()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsEmpty()
         {
             throw new NotImplementedException();
         }

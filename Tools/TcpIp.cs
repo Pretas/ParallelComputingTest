@@ -17,7 +17,7 @@ namespace Tools
             Tools.SendReceive.send(clientSock, dataByte);
         }
 
-        public static T ReceiveSendGeneric<T>(Socket clientSock)
+        public static T ReceiveGeneric<T>(Socket clientSock)
         {
             byte[] dataByte = (byte[])Tools.SendReceive.Receive(clientSock);
             T data = (T)Tools.SerializationUtil.DeserializeToObject(dataByte);
