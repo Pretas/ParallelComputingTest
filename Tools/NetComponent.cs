@@ -57,15 +57,16 @@ namespace NetComponents
     {
         void InsertSeed(List<SeedIndex> si, SeedContainer sc);
         List<SeedIndex> PickUpAndAllocateSeed(int coreNo);
-        SeedContainer GetSeedRequired(SeedIndexCompart sic);
+        SeedContainer GetSeed();
+        SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic);
         void ReturnBackSeed(int coreNo);
         void RemoveSeedAllocated(int coreNo, List<SeedIndex> si);
-        void SetIsFinished(bool isFinished);
-        bool GetIsFinished();
+        void SetIsMoreSeedFromUpperLayer(bool isFinished);
+        bool GetIsMoreSeedFromUpperLayer();
         // 배분되기 전의 시드, 배분된 시드 모두가 비어있으면
         bool IsEmpty();
-        bool GetIsLackOfSeed();
-        SeedIndexCompart GetSeedNotInSeedContainer(List<SeedIndex> si);
+        bool IsLackOfSeed();
+        SeedIndexCompart GetSeedIndexNotInSeedContainer(List<SeedIndex> si);
     }
 
     abstract public class SeedContainer
@@ -106,9 +107,9 @@ namespace NetComponents
             {
                 if (jn == CommJobName.InsertSeed)
                 {
-                    object[] input2 = (object[])input;
-                    List<SeedIndex> si = (List<SeedIndex>)input2[0];
-                    SeedContainer sc = (SeedContainer)input2[1];
+                    Tuple<List<SeedIndex>, SeedContainer> input2 = (Tuple<List<SeedIndex>, SeedContainer>)input;
+                    List<SeedIndex> si = input2.Item1;
+                    SeedContainer sc = input2.Item2;
 
                     sm.InsertSeed(si, sc);
                 }
@@ -178,7 +179,7 @@ namespace NetComponents
                     if (rm.CheckNeedSumUp())
                     {
                         comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
-                    }                    
+                    }
 
                     //Lower들에게 에러 났는지 체크
                     if (em.type1Errors.Count > 0)
@@ -202,7 +203,7 @@ namespace NetComponents
             }
         }
 
-        public void DoUpperJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket lowerSock, int lowerCoreNo)
+        public void DoUpperJob(IInputManager im, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket lowerSock, int lowerCoreNo)
         {
             try
             {
@@ -220,12 +221,11 @@ namespace NetComponents
                     { Tools.SendReceive.SendGeneric(lowerSock, false); }
                 }
 
-                bool isFinished = false;
-                while (!isFinished)
+                while (true)
                 {
                     // 시드 전송
-                    bool isNeedSeed = Tools.SendReceive.ReceiveGeneric<bool>(lowerSock);
-                    if (isNeedSeed)
+                    bool isLackOfSeed = Tools.SendReceive.ReceiveGeneric<bool>(lowerSock);
+                    if (isLackOfSeed)
                     {
                         List<SeedIndex> si = (List<SeedIndex>)comm.Communicate(CommJobName.AllocateSeed, ref sm, ref rm, this.coreNo);
 
@@ -234,7 +234,7 @@ namespace NetComponents
                             Tools.SendReceive.SendGeneric(lowerSock, true);
                             Tools.SendReceive.SendGeneric(lowerSock, si);
                             SeedIndexCompart sic = Tools.SendReceive.ReceiveGeneric<SeedIndexCompart>(lowerSock);
-                            SeedContainer sc = sm.GetSeedRequired(sic);
+                            SeedContainer sc = sm.GetSeedRequiredFromLowerLayer(sic);
                             Tools.SendReceive.SendGeneric(lowerSock, sc);
                         }
                         else
@@ -251,9 +251,10 @@ namespace NetComponents
                         comm.Communicate(CommJobName.StackResult, ref sm, ref rm, resSet);
                     }
 
-                    // 더이상받을 씨드없고, 씨드통에 내용 없고, emType0 false
-                    isFinished = (sm.GetIsFinished() && sm.IsEmpty()) || em.HasType0Error;
+                    // loop 탈출 : (더 이상 위에서 받을 씨드가 없음 and 씨드통에 내용 없음) or Type0에러 발생
+                    bool isFinished = (!sm.GetIsMoreSeedFromUpperLayer() && sm.IsEmpty()) || em.HasType0Error;
                     Tools.SendReceive.SendGeneric(lowerSock, isFinished);
+                    if (isFinished) break;
                 }
             }
             catch
@@ -262,7 +263,7 @@ namespace NetComponents
             }
         }
 
-        public void DoLowerJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket upperSock)
+        public void DoLowerJob(IInputManager im, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket upperSock)
         {
             try
             {
@@ -278,11 +279,10 @@ namespace NetComponents
                     }
                 }
 
-                bool isFinished = false;
-                while (!isFinished)
+                while (true)
                 {
                     // 시드 받기
-                    bool isLackOfSeed = sm.GetIsLackOfSeed();
+                    bool isLackOfSeed = sm.IsLackOfSeed();
                     Tools.SendReceive.SendGeneric(upperSock, isLackOfSeed);
                     if (isLackOfSeed)
                     {
@@ -290,10 +290,10 @@ namespace NetComponents
                         if (isPossible)
                         {
                             List<SeedIndex> si = Tools.SendReceive.ReceiveGeneric<List<SeedIndex>>(upperSock);
-                            SeedIndexCompart sic = sm.GetSeedNotInSeedContainer(si);
+                            SeedIndexCompart sic = sm.GetSeedIndexNotInSeedContainer(si);
                             Tools.SendReceive.SendGeneric(upperSock, sic);
                             SeedContainer sc = Tools.SendReceive.ReceiveGeneric<SeedContainer>(upperSock);
-                            object[] input = new object[2] { si, sc };
+                            object input = Tuple.Create(si, sc);
                             comm.Communicate(CommJobName.InsertSeed, ref sm, ref rm, input);
                         }
                     }
@@ -307,8 +307,8 @@ namespace NetComponents
                         Tools.SendReceive.SendGeneric(upperSock, sumUpRes.Item1);
                         Tools.SendReceive.SendGeneric(upperSock, sumUpRes.Item2);
                     }
-                                        
-                    //Lower들에게 에러 났는지 체크
+
+                    //Upper들에게 에러 났는지 체크
                     if (em.type1Errors.Count > 0)
                     {
                         foreach (int coreNo in em.type1Errors)
@@ -320,11 +320,10 @@ namespace NetComponents
                     }
 
                     //seed 모두 로딩되면, sm.Allo 비었으면, sm.NotAllo 비었으면, rm.Finish이면                    
-                    isFinished = Tools.SendReceive.ReceiveGeneric<bool>(upperSock);
-                    if (isFinished) sm.SetIsFinished(true); ;
-                    bool isFinishedLower = sm.IsEmpty();
-                    if (isFinished != isFinishedLower)
-                    { throw new Exception("위와 아래가 동기화가 되지 않았습니다"); }                      
+                    bool isFinished = Tools.SendReceive.ReceiveGeneric<bool>(upperSock);
+                    if (isFinished) sm.SetIsMoreSeedFromUpperLayer(false);
+                    if (isFinished == sm.IsEmpty()) break;
+                    else throw new Exception("위와 아래가 동기화가 되지 않았습니다");
                 }
             }
             catch
@@ -333,5 +332,56 @@ namespace NetComponents
             }
         }
 
+        public void DoWorkerJob(IInputManager im, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, Func<object, ProjectionData> run)
+        {
+            try
+            {
+                //인풋 다 받을 때까지 대기
+                while (true) if (im.GetCompleteLoading()) break;
+
+                // 런 실행                
+                while (true)
+                {
+                    List<SeedIndex> siList = (List<SeedIndex>)comm.Communicate(CommJobName.AllocateSeed, ref sm, ref rm, this.coreNo);
+                    Projector pj = new Projector(im.GetInput(), sm.GetSeed(), siList, run);
+                    pj.Execute();
+                    comm.Communicate(CommJobName.StackResult, ref sm, ref rm, Tuple.Create(siList, pj.Res));
+                    
+                    if (!sm.GetIsMoreSeedFromUpperLayer() && sm.IsEmpty()) break;
+                }
+            }
+            catch
+            {
+                em.type1Errors.Add(coreNo);
+                throw new Exception();
+            }
+        }
     }
+
+    public class Projector
+    {
+        protected InputContainer IC;
+        protected SeedContainer SC;
+        protected List<SeedIndex> SiList;
+        public Result Res { get; private set; }
+
+        public Projector(InputContainer ic, SeedContainer sc, List<SeedIndex> siList, Func<object, ProjectionData> run)
+        { IC = ic; SC = sc; SiList = siList; Run = run; }
+
+        protected object GetSpecificInput(SeedIndex si) { return null; }
+        protected void SumUpBySeed(ProjectionData pjd) { }
+        Func<object, ProjectionData> Run;
+        
+        public void Execute()
+        {
+            foreach (SeedIndex item in SiList)
+            {
+                object input = GetSpecificInput(item);
+                ProjectionData pjd = Run(item);
+                SumUpBySeed(pjd);
+            }
+        }
+    }
+
+    public abstract class ProjectionData { }
 }
