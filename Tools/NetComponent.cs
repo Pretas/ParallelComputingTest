@@ -33,6 +33,7 @@ namespace NetComponents
     public interface IInputManager
     {
         void LoadInput();
+        void InsertInput(InputContainer ic);
         InputContainer GetInput();
         void SetCompleteLoading();
         bool GetCompleteLoading();
@@ -55,30 +56,33 @@ namespace NetComponents
     public interface ISeedManager
     {
         void InsertSeed(List<SeedIndex> si, SeedContainer sc);
-        void AllocateSeed(int coreNo);
+        List<SeedIndex> PickUpAndAllocateSeed(int coreNo);
+        SeedContainer GetSeedRequired(SeedIndexCompart sic);
         void ReturnBackSeed(int coreNo);
         void RemoveSeedAllocated(int coreNo, List<SeedIndex> si);
+        void SetIsFinished(bool isFinished);
+        bool GetIsFinished();
         // 배분되기 전의 시드, 배분된 시드 모두가 비어있으면
         bool IsEmpty();
+        bool GetIsLackOfSeed();
+        SeedIndexCompart GetSeedNotInSeedContainer(List<SeedIndex> si);
     }
 
     abstract public class SeedContainer
     { }
 
     abstract public class SeedIndex
-    {
-        //abstract public bool IsSame(SeedIndex a);
-    }
+    { }
 
     abstract public class SeedIndexCompart
     { }
 
     public interface IResultManager
     {
-        void StackResult(List<SeedIndex> resIndex, List<Result> resReal);
+        void StackResult(List<SeedIndex> resIndex, Result resReal);
         bool CheckNeedSumUp();
         void ClearResult();
-        void SumUp();
+        Tuple<List<SeedIndex>, Result> SumUp();
         void UploadResult();
         // 쌓여있는 결과가 없으면
         bool IsEmpty();
@@ -94,28 +98,7 @@ namespace NetComponents
     {
         private static object SyncLockComm = new object();
 
-        //public static Communicator GetSingleton(ISeedManager sm, IResultManager rm)
-        //{
-        //    // Support multithreaded applications through 'Double checked locking' pattern which (once the instance exists) avoids locking each time the method is invoked
-        //    if (ST == null)
-        //    {
-        //        lock (SyncLock)
-        //        {
-        //            if (ST == null)
-        //            {
-
-        //                ST = new Singleton();
-        //                this. ST.sm
-        //                Comm.Sm = sm;
-        //                Comm.Rm = rm;
-        //            }
-        //        }
-        //    }
-
-        //    return Comm;
-        //}
-
-        public void Communicate(CommJobName jn, ref ISeedManager sm, ref IResultManager rm, object input)
+        public object Communicate(CommJobName jn, ref ISeedManager sm, ref IResultManager rm, object input)
         {
             object res = new object();
 
@@ -132,7 +115,8 @@ namespace NetComponents
                 else if (jn == CommJobName.AllocateSeed)
                 {
                     int coreNo = (int)input;
-                    sm.AllocateSeed(coreNo);
+                    List<SeedIndex> si = sm.PickUpAndAllocateSeed(coreNo);
+                    res = si;
                 }
                 else if (jn == CommJobName.ReturnBackSeed)
                 {
@@ -141,24 +125,22 @@ namespace NetComponents
                 }
                 else if (jn == CommJobName.StackResult)
                 {
-                    object[] input2 = (object[])input;
-                    int coreNo = (int)input2[0];
-                    List<SeedIndex> resIndex = (List<SeedIndex>)input2[1];
-                    List<Result> resReal = (List<Result>)input2[2];
+                    Tuple<int, List<SeedIndex>, Result> input2 = (Tuple<int, List<SeedIndex>, Result>)input;
+                    int coreNo = input2.Item1;
+                    List<SeedIndex> resIndex = input2.Item2;
+                    Result resReal = input2.Item3;
 
                     rm.StackResult(resIndex, resReal);
                     sm.RemoveSeedAllocated(coreNo, resIndex);
                 }
                 else if (jn == CommJobName.UploadResult)
                 {
-                    bool yn = rm.CheckNeedSumUp();
-                    if (yn)
-                    {
-                        rm.SumUp();
-                        rm.ClearResult();
-                        rm.UploadResult();
-                    }
+                    Tuple<List<SeedIndex>, Result> sumUpRes = rm.SumUp();
+                    rm.ClearResult();
+                    res = sumUpRes;
                 }
+
+                return res;
             }
         }
     }
@@ -171,6 +153,8 @@ namespace NetComponents
 
     public class ActionsByRole
     {
+        private int coreNo;
+
         public void DoHeadJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
         {
             try
@@ -191,7 +175,10 @@ namespace NetComponents
                     }
 
                     //결과를 디비에 업로드
-                    comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
+                    if (rm.CheckNeedSumUp())
+                    {
+                        comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
+                    }                    
 
                     //Lower들에게 에러 났는지 체크
                     if (em.type1Errors.Count > 0)
@@ -205,7 +192,7 @@ namespace NetComponents
                     }
 
                     //seed 모두 로딩되면, sm.Allo 비었으면, sm.NotAllo 비었으면, rm.Finish이면
-                    isCompleted = sl.IsFinished() && sm.IsEmpty() && rm.IsEmpty();
+                    isCompleted = sl.IsFinished() && sm.IsEmpty();
                 }
             }
             catch
@@ -215,7 +202,7 @@ namespace NetComponents
             }
         }
 
-        public void DoUpperJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket lowerSock)
+        public void DoUpperJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket lowerSock, int lowerCoreNo)
         {
             try
             {
@@ -224,188 +211,127 @@ namespace NetComponents
                 {
                     if (im.GetCompleteLoading())
                     {
-                        Tools.SendReceive.SendGeneric<bool>(lowerSock, true);
+                        Tools.SendReceive.SendGeneric(lowerSock, true);
                         InputContainer input = im.GetInput();
                         Tools.SendReceive.SendGeneric<InputContainer>(lowerSock, input);
                         break;
                     }
+                    else
+                    { Tools.SendReceive.SendGeneric(lowerSock, false); }
                 }
 
-                // 시드 전송
-                while (true)
+                bool isFinished = false;
+                while (!isFinished)
                 {
-                    bool isNeedSeed = (bool)Tools.SendReceive.ReceiveGeneric<bool>(lowerSock);
-                    if (!sm.IsEmpty()) { }
+                    // 시드 전송
+                    bool isNeedSeed = Tools.SendReceive.ReceiveGeneric<bool>(lowerSock);
+                    if (isNeedSeed)
+                    {
+                        List<SeedIndex> si = (List<SeedIndex>)comm.Communicate(CommJobName.AllocateSeed, ref sm, ref rm, this.coreNo);
+
+                        if (si.Count > 0)
+                        {
+                            Tools.SendReceive.SendGeneric(lowerSock, true);
+                            Tools.SendReceive.SendGeneric(lowerSock, si);
+                            SeedIndexCompart sic = Tools.SendReceive.ReceiveGeneric<SeedIndexCompart>(lowerSock);
+                            SeedContainer sc = sm.GetSeedRequired(sic);
+                            Tools.SendReceive.SendGeneric(lowerSock, sc);
+                        }
+                        else
+                        { Tools.SendReceive.SendGeneric(lowerSock, false); }
+                    }
+
+                    // 결과 받기
+                    bool isResult = Tools.SendReceive.ReceiveGeneric<bool>(lowerSock);
+                    if (isResult)
+                    {
+                        List<SeedIndex> si = Tools.SendReceive.ReceiveGeneric<List<SeedIndex>>(lowerSock);
+                        Result res = Tools.SendReceive.ReceiveGeneric<Result>(lowerSock);
+                        object resSet = Tuple.Create(lowerCoreNo, si, res);
+                        comm.Communicate(CommJobName.StackResult, ref sm, ref rm, resSet);
+                    }
+
+                    // 더이상받을 씨드없고, 씨드통에 내용 없고, emType0 false
+                    isFinished = (sm.GetIsFinished() && sm.IsEmpty()) || em.HasType0Error;
+                    Tools.SendReceive.SendGeneric(lowerSock, isFinished);
                 }
-
-
-                //while               
-                //  시드 요청 받음
-                //  시드 있는지 전달
-                //  시드 있으면
-                //    시드 전달
-                //    시드 state 변경
-                //  결과 전달받을 것 있는지 받음
-                //  전달받을 것이 있다면
-                //    결과 받음
-                //    결과 저장
-                //  sl의 로딩 끝 & sm에서 끝 전송            
-
-
             }
             catch
-            { }
-
+            {
+                em.type1Errors.Add(coreNo);
+            }
         }
+
+        public void DoLowerJob(IInputManager im, ISeedLoader sl, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, System.Net.Sockets.Socket upperSock)
+        {
+            try
+            {
+                // 인풋 전달 받음
+                while (true)
+                {
+                    bool isPossibleInput = Tools.SendReceive.ReceiveGeneric<bool>(upperSock);
+                    if (isPossibleInput)
+                    {
+                        InputContainer ic = Tools.SendReceive.ReceiveGeneric<InputContainer>(upperSock);
+                        im.InsertInput(ic);
+                        break;
+                    }
+                }
+
+                bool isFinished = false;
+                while (!isFinished)
+                {
+                    // 시드 받기
+                    bool isLackOfSeed = sm.GetIsLackOfSeed();
+                    Tools.SendReceive.SendGeneric(upperSock, isLackOfSeed);
+                    if (isLackOfSeed)
+                    {
+                        bool isPossible = Tools.SendReceive.ReceiveGeneric<bool>(upperSock);
+                        if (isPossible)
+                        {
+                            List<SeedIndex> si = Tools.SendReceive.ReceiveGeneric<List<SeedIndex>>(upperSock);
+                            SeedIndexCompart sic = sm.GetSeedNotInSeedContainer(si);
+                            Tools.SendReceive.SendGeneric(upperSock, sic);
+                            SeedContainer sc = Tools.SendReceive.ReceiveGeneric<SeedContainer>(upperSock);
+                            object[] input = new object[2] { si, sc };
+                            comm.Communicate(CommJobName.InsertSeed, ref sm, ref rm, input);
+                        }
+                    }
+
+                    // 결과 주기
+                    bool isResult = rm.CheckNeedSumUp();
+                    Tools.SendReceive.SendGeneric(upperSock, isResult);
+                    if (isResult)
+                    {
+                        Tuple<List<SeedIndex>, Result> sumUpRes = (Tuple<List<SeedIndex>, Result>)comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
+                        Tools.SendReceive.SendGeneric(upperSock, sumUpRes.Item1);
+                        Tools.SendReceive.SendGeneric(upperSock, sumUpRes.Item2);
+                    }
+                                        
+                    //Lower들에게 에러 났는지 체크
+                    if (em.type1Errors.Count > 0)
+                    {
+                        foreach (int coreNo in em.type1Errors)
+                        {
+                            comm.Communicate(CommJobName.ReturnBackSeed, ref sm, ref rm, coreNo);
+                        }
+
+                        em.type1Errors.Clear();
+                    }
+
+                    //seed 모두 로딩되면, sm.Allo 비었으면, sm.NotAllo 비었으면, rm.Finish이면                    
+                    isFinished = Tools.SendReceive.ReceiveGeneric<bool>(upperSock);
+                    if (isFinished) sm.SetIsFinished(true); ;
+                    bool isFinishedLower = sm.IsEmpty();
+                    if (isFinished != isFinishedLower)
+                    { throw new Exception("위와 아래가 동기화가 되지 않았습니다"); }                      
+                }
+            }
+            catch
+            {
+                em.type1Errors.Add(coreNo);
+            }
+        }
+
     }
 }
-
-
-
-        //public class Comm
-        //{
-        //public static object ShiftData(CommJobName jn, object source)
-        //{
-        //    object syncLock = new object();
-        //    object returnData = new object();
-
-        //    lock(syncLock)
-        //    {
-        //        if (jn == CommJobName.RegisterSeed)
-        //        {
-        //            List<SeedIndex> si = (List<SeedIndex>)source;
-        //            SeedManager sm = SeedManager.GetSeedManager();
-        //            sm.SeedBef.AddRange(si);
-        //        }
-        //        else if (jn == CommJobName.ProcessResult)
-        //        {
-        //            //집계될 인덱스를 RM.ResBef에서 제거  
-        //            ResultManager rm = ResultManager.GetResultManager();
-        //            SeedIndex[] res= new SeedIndex[rm.ResStacked.Count];
-        //            rm.ResStacked.CopyTo(res);
-        //            List<SeedIndex> resList = res.ToList();
-        //            rm.ResStacked.Clear();                    
-
-        //            //집계될 인덱스를 SM.SeedAllocated에서 제거
-        //            SeedManager sm = SeedManager.GetSeedManager();
-        //            foreach (SeedIndex si in resList)
-        //            {
-        //                foreach (KeyValuePair<int, List<SeedIndex>> item in sm.SeedAllocated)
-        //                {
-        //                    foreach (SeedIndex item2 in item.Value)
-        //                    {
-        //                        if (item2.IsSame(si))
-        //                        {
-        //                            item.Value.Remove(item2);
-        //                            break;
-        //                        }
-        //                    }
-        //                }
-        //            }
-
-        //            returnData = resList;
-        //        }
-        //        else if (jn == CommJobName.AllocateSeed)
-        //        { }
-        //        else if (jn == CommJobName.StackResult)
-        //        { }
-        //        else if (jn == CommJobName.ReturnBackSeed)
-        //        { }
-        //    }
-
-        //    return returnData;
-
-        //}
-
-
-
-
-    //public class SeedManager
-    //{
-    //    private static SeedManager Sm;
-    //    private SeedContainer Sc = new SeedContainer();
-    //    private bool CompleteLoadingYN;
-
-    //    private static object SyncLock = new object();
-    //    private static object SyncLock2 = new object();
-    //    private static object SyncLock3 = new object();
-    //    private static object SyncLock4 = new object();
-    //    private static object SyncLock5 = new object();
-
-    //    protected SeedManager() { }
-
-    //    public static SeedManager GetSeedManager()
-    //    {
-    //        // Support multithreaded applications through 'Double checked locking' pattern which (once the instance exists) avoids locking each time the method is invoked
-    //        if (Sm == null)
-    //        {
-    //            lock (SyncLock)
-    //            {
-    //                if (Sm == null)
-    //                {
-    //                    Sm = new SeedManager();
-    //                }
-    //            }
-    //        }
-
-    //        return Sm;
-    //    }
-                
-    //    public void InsertSeed(Dictionary<int, List<ICloneable>> seedFrom, bool completeLoadingYN)
-    //    {
-    //        lock (SyncLock2)
-    //        {
-    //            foreach (var item in seedFrom)
-    //            {
-    //                Sc.SeedNotAllocated.Add(item.Key, item.Value);
-    //            }
-                                
-    //            CompleteLoadingYN = completeLoadingYN;
-    //        }
-    //    }
-
-    //    public Dictionary<int, List<ICloneable>> AllocateSeed(int toNodeNo, int seedGroupIndex)
-    //    {
-    //        lock (SyncLock3)
-    //        {
-    //            List<ICloneable> seeds;
-    //            Sc.SeedNotAllocated.TryGetValue(seedGroupIndex, out seeds);
-
-    //            //dic<씨드그룹번호, 씨드그룹> 로딩
-    //            Dictionary<int, List<ICloneable>> temp;                
-    //            Sc.SeedAllocated.TryGetValue(toNodeNo, out temp);
-    //            //씨드그룹 옮김
-    //            Sc.SeedAllocated.Add(toNodeNo, temp);
-
-    //            return temp;
-    //        }
-    //    }
-
-    //    public void DeleteFinishedWork(int toNodeNo)
-    //    {
-    //        lock(SyncLock4)
-    //        {
-    //            //SeedManaged.SeedAllocated.Remove(toNodeNo);
-    //        }          
-    //    }
-
-    //    public void ReturnBackSeed(int nodeNo)
-    //    {
-    //        lock (SyncLock5)
-    //        {
-    //            //foreach (ICloneable item in SeedManaged.SeedAllocated[nodeNo])
-    //            //{
-    //            //    ICloneable itemCopied = (ICloneable)item.Clone();
-    //            //    SeedManaged.SeedNotAllocated.Add(itemCopied);
-    //            //    SeedManaged.SeedAllocated[nodeNo].Remove(item);
-    //            //}
-    //        }
-    //    }
-    
-
-    //public class SeedContainer
-    //{
-    //    public Dictionary<int, List<ICloneable>> SeedNotAllocated = new Dictionary<int, List<ICloneable>>();
-    //    public Dictionary<int, Dictionary<int, List<ICloneable>>> SeedAllocated = new Dictionary<int, Dictionary<int, List<ICloneable>>>();
-    //    public List<int> seedFinished = new List<int>();
-    //}
