@@ -19,6 +19,11 @@ namespace Modules
             throw new NotImplementedException();
         }
 
+        public void InsertInput(InputContainer ic)
+        {
+            throw new NotImplementedException();
+        }
+
         public void LoadInput()
         {
             Console.WriteLine("Load From DB");
@@ -49,7 +54,7 @@ namespace Modules
         {
             Console.WriteLine("Check Lack of Seed, return boolType");
             return true;
-        }       
+        }
 
         public void InsertSeedRequired()
         {
@@ -124,12 +129,52 @@ namespace Modules
             throw new NotImplementedException();
         }
 
-        public void RemoveSeedAllocated(int coreNo, List<SeedIndex> si)
+        public void RemoveAllocatedSeed(int coreNo, List<SeedIndex> si)
         {
             throw new NotImplementedException();
         }
 
         public bool IsEmpty()
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<SeedIndex> PickUpAndAllocateSeed(int coreNo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RearrangeSeedContainer()
+        {
+            throw new NotImplementedException();
+        }
+
+        public SeedContainer GetSeed()
+        {
+            throw new NotImplementedException();
+        }
+
+        public SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetIsMoreSeedFromUpperLayer(bool isFinished)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool GetIsMoreSeedFromUpperLayer()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsLackOfSeed()
+        {
+            throw new NotImplementedException();
+        }
+
+        public SeedIndexCompart GetSeedIndexNotInSeedContainer(List<SeedIndex> si)
         {
             throw new NotImplementedException();
         }
@@ -191,6 +236,16 @@ namespace Modules
         }
 
         public bool IsEmpty()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void StackResult(List<SeedIndex> resIndex, Result resReal)
+        {
+            throw new NotImplementedException();
+        }
+
+        Tuple<List<SeedIndex>, Result> IResultManager.SumUp()
         {
             throw new NotImplementedException();
         }

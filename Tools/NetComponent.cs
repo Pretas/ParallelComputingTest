@@ -57,10 +57,13 @@ namespace NetComponents
     {
         void InsertSeed(List<SeedIndex> si, SeedContainer sc);
         List<SeedIndex> PickUpAndAllocateSeed(int coreNo);
+        void RemoveAllocatedSeed(int coreNo, List<SeedIndex> si);
+        void RearrangeSeedContainer();
+        void ReturnBackSeed(int coreNo);
+
         SeedContainer GetSeed();
         SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic);
-        void ReturnBackSeed(int coreNo);
-        void RemoveSeedAllocated(int coreNo, List<SeedIndex> si);
+               
         void SetIsMoreSeedFromUpperLayer(bool isFinished);
         bool GetIsMoreSeedFromUpperLayer();
         // 배분되기 전의 시드, 배분된 시드 모두가 비어있으면
@@ -69,14 +72,11 @@ namespace NetComponents
         SeedIndexCompart GetSeedIndexNotInSeedContainer(List<SeedIndex> si);
     }
 
-    abstract public class SeedContainer
-    { }
+    abstract public class SeedContainer { }
 
-    abstract public class SeedIndex
-    { }
+    abstract public class SeedIndex { }
 
-    abstract public class SeedIndexCompart
-    { }
+    abstract public class SeedIndexCompart { }
 
     public interface IResultManager
     {
@@ -89,8 +89,7 @@ namespace NetComponents
         bool IsEmpty();
     }
 
-    public abstract class Result
-    { }
+    public abstract class Result { }
 
     public enum CommJobName
     { InsertSeed, AllocateSeed, ReturnBackSeed, StackResult, UploadResult }
@@ -132,7 +131,8 @@ namespace NetComponents
                     Result resReal = input2.Item3;
 
                     rm.StackResult(resIndex, resReal);
-                    sm.RemoveSeedAllocated(coreNo, resIndex);
+                    sm.RemoveAllocatedSeed(coreNo, resIndex);
+                    sm.RearrangeSeedContainer();
                 }
                 else if (jn == CommJobName.UploadResult)
                 {
