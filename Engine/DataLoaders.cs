@@ -11,15 +11,13 @@ namespace Engine
         private ScenarioSet scnSet = new ScenarioSet();
         //public ScenarioSet scnSet { get; private set; }
 
-        public ScenarioGenerator(string id, string asset, int number, int period)
+        public ScenarioGenerator(int scnNo, int period)
         {
             scnSet = new ScenarioSet();
-            scnSet.ID = id;
-            scnSet.Asset = asset;
-            scnSet.ScenarioNo = number;
+            scnSet.ScenarioNo = scnNo;
             scnSet.scenarioData = new double[period];
 
-            Random rnd = new Random();
+            Random rnd = new Random(scnNo);
             for (int i = 0; i < period; i++)
             {
                 scnSet.scenarioData[i] = rnd.NextDouble() - 0.5;
@@ -42,7 +40,7 @@ namespace Engine
             ScnCount = scnCount;
             Period = period;
 
-            string[] scnNames = new string[6] { "DSCRT", "StockKorea", "StockUSA", "StockEuro", "MMF", "FI" };
+            string[] scnNames = new string[7] { "DSCRT", "StockKorea1", "StockKorea2", "StockUSA", "StockEuro", "MMF", "FI" };
 
             for (int i = 0; i < scnNames.Length; i++)
             {
@@ -50,7 +48,7 @@ namespace Engine
 
                 for (int j = 0; j < ScnCount; j++)
                 {
-                    ScenarioGenerator scnSet = new ScenarioGenerator(@"TEST", scnNames[i], j + 1, period);
+                    ScenarioGenerator scnSet = new ScenarioGenerator(j + 1, period);
                     scnFullSetOneAsset.Add(scnSet.GetScenarioSet());
                 }
 

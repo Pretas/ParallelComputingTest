@@ -59,8 +59,6 @@ namespace Engine
     [Serializable]
     public struct ScenarioSet : ICloneable
     {
-        public string ID;
-        public string Asset;
         public int ScenarioNo;
         public double[] scenarioData;
 

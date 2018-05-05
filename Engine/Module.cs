@@ -10,7 +10,7 @@ namespace Engine
     public class Module
     {
         public Module(int scnCount, int infCount, Engine.ScenarioComposer sc, Engine.InforceComposer ic)
-        {   
+        {
             Dictionary<int, ValuationResult> aggregatedResult = new Dictionary<int, ValuationResult>();
 
             for (int i = 1; i <= infCount; i++)
@@ -70,6 +70,7 @@ namespace Engine
 
     public class Calculator
     {
+                
         public Inforce Rec;
         public List<ScenarioSet> Scn;
         public int LoopNo;
@@ -90,7 +91,7 @@ namespace Engine
                 if (i == 1)
                 { previousRes = (double[])Rec.RecData.Clone(); }
                 else
-                { Res.TryGetValue(i-1, out previousRes); }
+                { Res.TryGetValue(i - 1, out previousRes); }
 
                 double[] currentRes = new double[Rec.RecData.Length];
 
@@ -98,7 +99,7 @@ namespace Engine
                 foreach (var item in Scn)
                 { yield = yield + item.scenarioData[i - 1]; }
                 yield = yield / Scn.Count;
-                
+
                 for (int j = 0; j < Rec.RecData.Length / 5; j++)
                 {
                     currentRes[j] = previousRes[j] * (1.0 + yield);
@@ -109,9 +110,9 @@ namespace Engine
         }
     }
 
-    
 
-    
 
-    
+
+
+
 }
