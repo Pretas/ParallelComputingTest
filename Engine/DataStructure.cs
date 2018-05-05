@@ -5,8 +5,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
 
-namespace Engine
+namespace Modules
 {
+    [Serializable]
+    public class ProductInfo
+    {
+        public int ProductCode { get; set; }
+        public double GmxbRatio { get; set; }
+    }
+
+    [Serializable]
+    public class Loadings
+    {
+        public int ProductCode { get; set; }
+        public double AlphaRatio { get; set; }
+    }
+
     [Serializable]
     public class ValuationResult
     {

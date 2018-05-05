@@ -6,47 +6,48 @@ namespace Modules
 {
     public class SCVProjectionFamily : ProjectionFamily
     {
-        public InputManagerSCV im;
+        public InputManagerSCV im = new InputManagerSCV();
         public SeedLoaderSCV sl;
         public SeedManagerSCV sm;
         public ResultManagerSCV rm;
         public ProjectorSCV projector;
-        public InputContainerSCV inputContainer;
-        public SeedIndexSCV seedIndex;
-        public SeedIndexCompartSCV sic;
-        public SeedContainerSCV seedContainer;
-        public ResultSCV result;
-        public ProjectionDataSCV pjd;
+        //public InputContainerSCV inputContainer;
+        //public SeedIndexSCV seedIndex;
+        //public SeedIndexCompartSCV sic;
+        //public SeedContainerSCV seedContainer;
+        //public ResultSCV result;
+        //public ProjectionDataSCV pjd;
     }
 
     public class InputManagerSCV : IInputManager
     {
-        public InputContainerSCV IC;
-        public bool CompleteLoadingYN = false;
-
-        public bool GetCompleteLoading()
-        {
-            throw new NotImplementedException();
-        }
-
-        public InputContainer GetInput()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void InsertInput(InputContainer ic)
-        {
-            throw new NotImplementedException();
-        }
+        private InputContainerSCV IC;
+        private bool IsCompletedLoading = false;
 
         public void LoadInput()
         {
-            Console.WriteLine("Load From DB");
+            IC = new InputContainerSCV();
+
+            IC.productsInfo.Add(1, new ProductInfo { ProductCode = 1, GmxbRatio = 0.005 });
+            IC.productsInfo.Add(2, new ProductInfo { ProductCode = 2, GmxbRatio = 0.006 });
+
+            IC.loadings.Add(1, new Loadings { ProductCode = 1, AlphaRatio = 1.0 });
+            IC.loadings.Add(2, new Loadings { ProductCode = 2, AlphaRatio = 2.0 });            
+        }
+
+        public bool GetCompleteLoading()
+        {
+            return IsCompletedLoading;
         }
 
         public void SetCompleteLoading()
         {
-            throw new NotImplementedException();
+            IsCompletedLoading = true;
+        }
+
+        public InputContainer GetInput()
+        {
+            return IC;
         }
     }
 
@@ -206,9 +207,9 @@ namespace Modules
         {
             foreach (SeedIndex item in siList)
             {
-                object input = GetSpecificInput(item);
-                ProjectionData pjd = Run(item);
-                SumUp(pjd, ref baseResult);
+                //object input = GetSpecificInput(item);
+                //ProjectionData pjd = Run(item);
+                //SumUp(pjd, ref baseResult);
             }
 
             return null;
@@ -221,7 +222,10 @@ namespace Modules
     }
     
     public class InputContainerSCV : InputContainer
-    { }
+    {
+        public Dictionary<int, ProductInfo> productsInfo = new Dictionary<int, ProductInfo>();
+        public Dictionary<int, Loadings> loadings = new Dictionary<int, Loadings>();
+    }
 
     public class SeedIndexSCV : SeedIndex
     { }

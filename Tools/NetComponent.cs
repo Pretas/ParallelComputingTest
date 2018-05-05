@@ -22,10 +22,8 @@ namespace NetComponents
     }
 
     public interface IInputManager
-
     {
         void LoadInput();
-        void InsertInput(InputContainer ic);
         InputContainer GetInput();
         void SetCompleteLoading();
         bool GetCompleteLoading();
