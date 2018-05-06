@@ -6,21 +6,27 @@ namespace Modules
 {
     public class SCVProjectionFamily : ProjectionFamily
     {
-        public InputManagerSCV im = new InputManagerSCV();
+        public InputManagerSCV im;
         public SeedLoaderSCV sl;
         public SeedManagerSCV sm;
         public ResultManagerSCV rm;
         public ProjectorSCV projector;
-        //public InputContainerSCV inputContainer;
-        //public SeedIndexSCV seedIndex;
-        //public SeedIndexCompartSCV sic;
-        //public SeedContainerSCV seedContainer;
-        //public ResultSCV result;
-        //public ProjectionDataSCV pjd;
     }
 
     public class InputManagerSCV : IInputManager
     {
+        // ***** 싱글턴 구현부
+        protected static InputManagerSCV ST;
+        protected InputManagerSCV() { }
+        protected static object SyncLock = new object();
+
+        public static InputManagerSCV GetSingleton()
+        {
+            if (ST == null) lock (SyncLock) if (ST == null) ST = new InputManagerSCV();
+            return ST;
+        }
+        // *****
+
         private InputContainerSCV IC;
         private bool IsCompletedLoading = false;
 
@@ -55,48 +61,97 @@ namespace Modules
     {
         Dictionary<int, Tuple<int, int>> PolList = new Dictionary<int, Tuple<int, int>>();
         Dictionary<int, string> ScnList = new Dictionary<int, string>();
-        int sPol, ePol, cPol;
-        int sScn, eScn, cScn;
+        int CurrentPolListNo;
+        int CurrentScnListNo;
 
         public void Init()
         {
-            Console.WriteLine("Init Total Seed List");
+            int ePol, cPol;
+
+            ePol = 5000000; cPol = 0;
+
+            int polUnit = 1000;
+            int counter = 1;
+            int groupNoCounter = 1;
+            int start = 0; int end = 0;
+            for (int i = 1; i <= ePol; i++)
+            {
+                cPol = i;
+                if (counter == 1)
+                { start = cPol; }
+
+                if (counter == polUnit || cPol==ePol)
+                {
+                    end = cPol;
+                    PolList.Add(groupNoCounter, Tuple.Create(start, end));
+                    groupNoCounter++;
+                    counter = 0;
+                }
+                counter++;
+            }
+
+            ScnList.Add(1, "Base");
+            ScnList.Add(2, "EqUp");
+            ScnList.Add(3, "EqDn");
+            ScnList.Add(4, "IrUp");
+            ScnList.Add(5, "IrDn");
+            ScnList.Add(6, "VolUp");
+            ScnList.Add(7, "VolDn");
         }
 
-        public bool CheckLackOfSeed()
+        public bool IsLackOfSeed()
         {
-            Console.WriteLine("Check Lack of Seed, return boolType");
-            return true;
-        }
-
-        public void InsertSeedRequired()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void LoadSeed()
-        {
-            throw new NotImplementedException();
-        }
-
-        Tuple<List<SeedIndex>, SeedContainer> ISeedLoader.LoadSeed()
-        {
-            throw new NotImplementedException();
+            SeedManagerSCV sm = SeedManagerSCV.GetSingleton();
+            if (sm.GetSeedCountNotAllocated() < 20)
+            { return true; }
+            else return false;
         }
 
         public bool IsFinished()
         {
-            throw new NotImplementedException();
+            bool isFinishedPol = cPol == ePol;
+            bool isFinishedScn = cScn == eScn;
+            if (isFinishedPol && isFinishedScn) return true;
+            else return false;
+        }
+        
+        public void LoadSeed(ref SeedIndex si, ref SeedContainer sc)
+        {
+            
+
+            
         }
 
-        Tuple<SeedIndex, SeedContainer> ISeedLoader.LoadSeed()
+        public Tuple<SeedIndex, SeedContainer> LoadSeed()
         {
-            throw new NotImplementedException();
+            SeedIndexSCV si2 = new SeedIndexSCV();
+            SeedContainerSCV sc2 = new SeedContainerSCV();
+
+            si2.SeedIndex.Add(Tuple.Create(1, 1));
+            sc2.InforceSeed.Add(1, new List<Inforce>());
+            sc2.ScenarioSeed.Add(1, new Dictionary<string, ScenarioFullSet>());
+
+            return Tuple.Create(si2 as SeedIndex, sc2 as SeedContainer);
         }
     }
 
     public class SeedManagerSCV : ISeedManager
     {
+        protected static SeedManagerSCV ST;
+        protected SeedManagerSCV() { }
+        protected static object SyncLock = new object();
+
+        public static SeedManagerSCV GetSingleton()
+        {
+            if (ST == null) lock (SyncLock) if (ST == null) ST = new SeedManagerSCV();
+            return ST;
+        }
+
+        private SeedContainerSCV SC = new SeedContainerSCV();
+        private SeedIndexSCV SeedNotAllocated = new SeedIndexSCV();
+        private Dictionary<int, SeedIndexSCV> SeedAllocated = new Dictionary<int, SeedIndexSCV>();
+        private bool IsMoreSeedFromUpperLayer = true;
+
         public bool GetIsMoreSeedFromUpperLayer()
         {
             throw new NotImplementedException();
@@ -156,10 +211,25 @@ namespace Modules
         {
             throw new NotImplementedException();
         }
+
+        public int GetSeedCountNotAllocated()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class ResultManagerSCV : IResultManager
     {
+        protected static ResultManagerSCV ST;
+        protected ResultManagerSCV() { }
+        protected static object SyncLock = new object();
+
+        public static ResultManagerSCV GetSingleton()
+        {
+            if (ST == null) lock (SyncLock) if (ST == null) ST = new ResultManagerSCV();
+            return ST;
+        }
+
         public bool CheckNeedSumUp()
         {
             throw new NotImplementedException();
@@ -228,13 +298,26 @@ namespace Modules
     }
 
     public class SeedIndexSCV : SeedIndex
-    { }
+    {
+        // List<Tuple<Inforce Index, Scenario Index>>
+        public List<Tuple<int, int>> SeedIndex = new List<Tuple<int, int>>();
+    }
 
     public class SeedIndexCompartSCV : SeedIndexCompart
-    { }
+    {
+        // Inforce : List<Index>
+        public List<int> InforceSeedIndex = new List<int>();
+        // Scenario : List<Index>
+        public List<int> ScenarioSeedIndex = new List<int>();
+    }
 
     public class SeedContainerSCV : SeedContainer
-    { }
+    {
+        // Inforce : Dic<Index, Seed>
+        public Dictionary<int, List<Inforce>> InforceSeed = new Dictionary<int, List<Inforce>>();
+        // Scenario : Dic<Index, Seed>
+        public Dictionary<int, Dictionary<string, ScenarioFullSet>> ScenarioSeed = new Dictionary<int, Dictionary<string, ScenarioFullSet>>();
+    }
 
     public class ResultSCV
     { }
@@ -245,119 +328,7 @@ namespace Modules
 
     
 
-
-
-    public class TestProjector :  NetComponents.IProjector
-    { 
-        
-    }
-
     
-
-
-    public class SeedManager : Singleton, ISeedManager
-    {
-        public SeedContainer SC;
-        public List<SeedIndex> SeedNotAllocated;
-        public Dictionary<int, List<SeedIndex>> SeedAllocated;
-        public bool CompleteLoadingYN = false;
-
-        public void InsertSeedIndex(SeedContainer sc)
-        {
-            Console.WriteLine("Insert SeedIndex");
-        }
-
-        public void InsertSeed(SeedContainer sc)
-        {
-            Console.WriteLine("Insert Seed to Container");
-        }
-
-        public void AllocateSeed(int coreNo, List<SeedIndex> si)
-        {
-            Console.WriteLine(string.Format("Allocate Seed to {0}", coreNo));
-        }
-
-        public void ReturnBackSeed(int coreNo, List<SeedIndex> si)
-        {
-            Console.WriteLine(string.Format("ReturnBack Seed to {0}", coreNo));
-        }
-
-        public void InsertSeedIndex(SeedIndex si)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RemoveSeedAllocated(List<SeedIndex> si)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void InsertSeed(List<SeedIndex> si, SeedContainer sc)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void AllocateSeed(int coreNo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ReturnBackSeed(int coreNo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RemoveAllocatedSeed(int coreNo, List<SeedIndex> si)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool IsEmpty()
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<SeedIndex> PickUpAndAllocateSeed(int coreNo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RearrangeSeedContainer()
-        {
-            throw new NotImplementedException();
-        }
-
-        public SeedContainer GetSeed()
-        {
-            throw new NotImplementedException();
-        }
-
-        public SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SetIsMoreSeedFromUpperLayer(bool isFinished)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool GetIsMoreSeedFromUpperLayer()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool IsLackOfSeed()
-        {
-            throw new NotImplementedException();
-        }
-
-        public SeedIndexCompart GetSeedIndexNotInSeedContainer(List<SeedIndex> si)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
 
 
     

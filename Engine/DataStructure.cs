@@ -81,4 +81,11 @@ namespace Modules
             throw new NotImplementedException();
         }
     }
+
+    [Serializable]
+    public struct ScenarioFullSet
+    {
+        public string scnName;
+        public List<ScenarioSet> scnValue;
+    }
 }

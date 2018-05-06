@@ -13,12 +13,12 @@ namespace NetComponents
         public ISeedManager sm;
         public IResultManager rm;
         public IProjector projector;
-        public InputContainer inputContainer;
-        public SeedIndex seedIndex;
-        public SeedIndexCompart sic;
-        public SeedContainer seedContainer;
-        public Result result;
-        public ProjectionData pjd;
+        //public InputContainer inputContainer;
+        //public SeedIndex seedIndex;
+        //public SeedIndexCompart sic;
+        //public SeedContainer seedContainer;
+        //public Result result;
+        //public ProjectionData pjd;
     }
 
     public interface IInputManager
@@ -36,9 +36,9 @@ namespace NetComponents
         // 초기화, 불러와야 할 총 인풋리스트 저장
         void Init();
         // 시드 개수가 부족한지 체크
-        bool CheckLackOfSeed();
+        bool IsLackOfSeed();
         // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
-        Tuple<SeedIndex, SeedContainer> LoadSeed();
+        Tuple<SeedIndex, SeedContainer> LoadSeed();        
         // 모든 시드가 로딩 되었으면 true
         bool IsFinished();
     }
@@ -60,6 +60,7 @@ namespace NetComponents
         bool IsEmpty();
         bool IsLackOfSeed();
         SeedIndexCompart GetSeedIndexNotInSeedContainer(SeedIndex si);
+        int GetSeedCountNotAllocated();
     }
 
     abstract public class SeedContainer { }
@@ -149,6 +150,29 @@ namespace NetComponents
                 return res;
             }
         }
+    }
+
+    public class Utility
+    {
+        public static T GetSingleton<T>(T obj)
+        {
+            object 
+
+            if (obj == null)
+            {
+                lock (SyncLock)
+                {
+                    if (ST == null)
+                    {
+                        ST = new Singleton();
+                    }
+                }
+            }
+
+            return ST;
+
+        }
+
     }
 
     //public class Singleton
