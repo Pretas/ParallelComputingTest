@@ -99,7 +99,7 @@ namespace Modules
             ScnList.Add(7, "VolDn");
         }
 
-        public bool IsLackOfSeed()
+        public bool GetIsLackOfSeed()
         {
             SeedManagerSCV sm = SeedManagerSCV.GetSingleton();
             if (sm.GetSeedCountNotAllocated() < 20)

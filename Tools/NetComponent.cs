@@ -23,9 +23,13 @@ namespace NetComponents
 
     public interface IInputManager
     {
+        // DB에서 인풋 로딩
         void LoadInput();
+        // 사용처에서 인풋 가져갈 때
         InputContainer GetInput();
+        // 인풋 로딩이 끝났을 때 True 입력
         void SetCompleteLoading();
+        // 인풋 로딩이 끝났는지 알고 싶을 때
         bool GetCompleteLoading();
     }
 
@@ -36,9 +40,9 @@ namespace NetComponents
         // 초기화, 불러와야 할 총 인풋리스트 저장
         void Init();
         // 시드 개수가 부족한지 체크
-        bool IsLackOfSeed();
+        bool GetIsLackOfSeed();
         // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
-        Tuple<SeedIndex, SeedContainer> LoadSeed();        
+        void LoadSeed(out SeedIndex si, out SeedContainer sc);
         // 모든 시드가 로딩 되었으면 true
         bool IsFinished();
     }
@@ -46,7 +50,7 @@ namespace NetComponents
     public interface ISeedManager
     {
         void InsertSeed(SeedIndex si, SeedContainer sc);
-        SeedIndex PickUpAndAllocateSeed(int coreNo);
+        void PickUpAndAllocateSeed(int coreNo, out SeedIndex si);
         void RemoveAllocatedSeed(int coreNo, SeedIndex si);
         void RearrangeSeedContainer();
         void ReturnBackSeed(int coreNo);
@@ -74,7 +78,7 @@ namespace NetComponents
         void StackResult(SeedIndex resIndex, Result resReal);
         bool CheckNeedSumUp();
         void ClearResult();
-        Tuple<SeedIndex, Result> SumUp();
+        void SumUp(out SeedIndex si, out Result res);
         void UploadResult();
         // 쌓여있는 결과가 없으면
         bool IsEmpty();
@@ -121,7 +125,8 @@ namespace NetComponents
                 else if (jn == CommJobName.AllocateSeed)
                 {
                     int coreNo = (int)input;
-                    SeedIndex si = sm.PickUpAndAllocateSeed(coreNo);
+                    SeedIndex si;
+                    sm.PickUpAndAllocateSeed(coreNo, out si);
                     res = si;
                 }
                 else if (jn == CommJobName.ReturnBackSeed)
@@ -142,7 +147,9 @@ namespace NetComponents
                 }
                 else if (jn == CommJobName.UploadResult)
                 {
-                    Tuple<SeedIndex, Result> sumUpRes = rm.SumUp();
+                    SeedIndex si;
+                    Result sumUpRes;
+                    rm.SumUp(out si, out sumUpRes);
                     rm.ClearResult();
                     res = sumUpRes;
                 }
@@ -151,30 +158,7 @@ namespace NetComponents
             }
         }
     }
-
-    public class Utility
-    {
-        public static T GetSingleton<T>(T obj)
-        {
-            object 
-
-            if (obj == null)
-            {
-                lock (SyncLock)
-                {
-                    if (ST == null)
-                    {
-                        ST = new Singleton();
-                    }
-                }
-            }
-
-            return ST;
-
-        }
-
-    }
-
+    
     //public class Singleton
     //{
     //    protected static Singleton ST;
