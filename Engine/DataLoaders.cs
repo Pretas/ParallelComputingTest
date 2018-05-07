@@ -8,12 +8,12 @@ namespace Modules
 {
     public class ScenarioGenerator
     {
-        private ScenarioSet scnSet = new ScenarioSet();
+        private ScenarioData scnSet = new ScenarioData();
         //public ScenarioSet scnSet { get; private set; }
 
         public ScenarioGenerator(int scnNo, int period)
         {
-            scnSet = new ScenarioSet();
+            scnSet = new ScenarioData();
             scnSet.ScenarioNo = scnNo;
             scnSet.scenarioData = new double[period];
 
@@ -24,7 +24,7 @@ namespace Modules
             }
         }
 
-        public ScenarioSet GetScenarioSet()
+        public ScenarioData GetScenarioSet()
         { return scnSet; }
     }
 
@@ -33,7 +33,7 @@ namespace Modules
         public int ScnCount { get; private set; }
         public int Period { get; private set; }
 
-        public Dictionary<string, List<ScenarioSet>> scnFullSet = new Dictionary<string, List<ScenarioSet>>();
+        public List<ScenarioSet> scnFullSet = new List<ScenarioSet>();
 
         public ScenarioComposer(int scnCount, int period)
         {
@@ -42,17 +42,21 @@ namespace Modules
 
             string[] scnNames = new string[7] { "DSCRT", "StockKorea1", "StockKorea2", "StockUSA", "StockEuro", "MMF", "FI" };
 
-            for (int i = 0; i < scnNames.Length; i++)
+            for (int i = 0; i < scnNames.Length; i++) //6개 자산, 할인율
             {
-                List<ScenarioSet> scnFullSetOneAsset = new List<ScenarioSet>();
-
+                ScenarioSet scn = new ScenarioSet();
+                scn.ScnName = scnNames[i];
+                                
+                List<ScenarioData> scnByAsset = new List<ScenarioData>();                
                 for (int j = 0; j < ScnCount; j++)
                 {
                     ScenarioGenerator scnSet = new ScenarioGenerator(j + 1, period);
-                    scnFullSetOneAsset.Add(scnSet.GetScenarioSet());
+                    ScenarioData sd = scnSet.GetScenarioSet();
+                    scnByAsset.Add(sd);
                 }
+                scn.ScnValue = scnByAsset;
 
-                scnFullSet.Add(scnNames[i], scnFullSetOneAsset);
+                scnFullSet.Add(scn);
             }
         }
     }

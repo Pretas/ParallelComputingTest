@@ -59,10 +59,10 @@ namespace Modules
 
     public class SeedLoaderSCV : ISeedLoader
     {
-        Dictionary<int, Tuple<int, int>> PolList = new Dictionary<int, Tuple<int, int>>();
-        Dictionary<int, string> ScnList = new Dictionary<int, string>();
-        int CurrentPolListNo;
-        int CurrentScnListNo;
+        SeedIndexSCV SeedIndexResidual = new SeedIndexSCV();
+        Dictionary<int, Tuple<int, int>> PolIndexTotal = new Dictionary<int, Tuple<int, int>>();
+        Dictionary<int, string> ScnIndexTotal = new Dictionary<int, string>();        
+        int LoadUnit = 50;
 
         public void Init()
         {
@@ -83,55 +83,71 @@ namespace Modules
                 if (counter == polUnit || cPol==ePol)
                 {
                     end = cPol;
-                    PolList.Add(groupNoCounter, Tuple.Create(start, end));
+                    PolIndexTotal.Add(groupNoCounter, Tuple.Create(start, end));
                     groupNoCounter++;
                     counter = 0;
                 }
                 counter++;
             }
 
-            ScnList.Add(1, "Base");
-            ScnList.Add(2, "EqUp");
-            ScnList.Add(3, "EqDn");
-            ScnList.Add(4, "IrUp");
-            ScnList.Add(5, "IrDn");
-            ScnList.Add(6, "VolUp");
-            ScnList.Add(7, "VolDn");
+            ScnIndexTotal.Add(1, "Base");
+            ScnIndexTotal.Add(2, "EqUp");
+            ScnIndexTotal.Add(3, "EqDn");
+            ScnIndexTotal.Add(4, "IrUp");
+            ScnIndexTotal.Add(5, "IrDn");
+            ScnIndexTotal.Add(6, "VolUp");
+            ScnIndexTotal.Add(7, "VolDn");
+
+            foreach (var pol in PolIndexTotal)
+            {
+                foreach (var scn in ScnIndexTotal)
+                {
+                    SeedIndexResidual.SeedIndex.Add(Tuple.Create(pol.Key, scn.Key));
+                }
+            }
         }
 
         public bool GetIsLackOfSeed()
         {
             SeedManagerSCV sm = SeedManagerSCV.GetSingleton();
-            if (sm.GetSeedCountNotAllocated() < 20)
-            { return true; }
+            if (sm.GetSeedCountNotAllocated() < LoadUnit) return true;
             else return false;
         }
 
-        public bool IsFinished()
+        public bool GetIsFinished()
         {
-            bool isFinishedPol = cPol == ePol;
-            bool isFinishedScn = cScn == eScn;
-            if (isFinishedPol && isFinishedScn) return true;
+            if (SeedIndexResidual.SeedIndex.Count == 0) return true;
             else return false;
         }
         
-        public void LoadSeed(ref SeedIndex si, ref SeedContainer sc)
+        public void LoadSeed(out SeedIndex si, out SeedContainer sc)
         {
-            
+            // 유닛 만큼 시드인덱스 가져오기
+            SeedIndexSCV siNew = new SeedIndexSCV();
+            int cnt = Math.Max(SeedIndexResidual.SeedIndex.Count, LoadUnit);
+            siNew.SeedIndex = SeedIndexResidual.SeedIndex.GetRange(0, cnt - 1); // 원하는 만큼 가져오기
+            SeedIndexResidual.SeedIndex.RemoveRange(0, cnt - 1); // 가져온 부분 삭제
 
-            
-        }
+            // 필요한 시드를 받음
+            SeedManagerSCV sm = SeedManagerSCV.GetSingleton();
+            SeedIndexCompartSCV sic = (SeedIndexCompartSCV)sm.GetSeedIndexNotInSeedContainer(siNew);
 
-        public Tuple<SeedIndex, SeedContainer> LoadSeed()
-        {
-            SeedIndexSCV si2 = new SeedIndexSCV();
-            SeedContainerSCV sc2 = new SeedContainerSCV();
+            // 씨드 로딩
+            SeedContainerSCV scNew = new SeedContainerSCV();
+            foreach (int item in sic.InforceSeedIndex)
+            {
+                InforceComposer ic = new InforceComposer(PolIndexTotal[item].Item2 - PolIndexTotal[item].Item1 + 1);
+                scNew.InforceSeed.Add(item, ic.GetInforceSet());
+            }
 
-            si2.SeedIndex.Add(Tuple.Create(1, 1));
-            sc2.InforceSeed.Add(1, new List<Inforce>());
-            sc2.ScenarioSeed.Add(1, new Dictionary<string, ScenarioFullSet>());
+            foreach (int item in sic.ScenarioSeedIndex)
+            {
+                ScenarioComposer scnComposer = new ScenarioComposer(1000, 1200);
+                scNew.ScenarioSeed.Add(item, scnComposer.scnFullSet);
+            }
 
-            return Tuple.Create(si2 as SeedIndex, sc2 as SeedContainer);
+            si = siNew;
+            sc = scNew;
         }
     }
 
@@ -213,6 +229,11 @@ namespace Modules
         }
 
         public int GetSeedCountNotAllocated()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void PickUpAndAllocateSeed(int coreNo, out SeedIndex si)
         {
             throw new NotImplementedException();
         }
@@ -316,7 +337,7 @@ namespace Modules
         // Inforce : Dic<Index, Seed>
         public Dictionary<int, List<Inforce>> InforceSeed = new Dictionary<int, List<Inforce>>();
         // Scenario : Dic<Index, Seed>
-        public Dictionary<int, Dictionary<string, ScenarioFullSet>> ScenarioSeed = new Dictionary<int, Dictionary<string, ScenarioFullSet>>();
+        public Dictionary<int, List<ScenarioSet>> ScenarioSeed = new Dictionary<int, List<ScenarioSet>>();
     }
 
     public class ResultSCV

@@ -44,7 +44,7 @@ namespace NetComponents
         // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
         void LoadSeed(out SeedIndex si, out SeedContainer sc);
         // 모든 시드가 로딩 되었으면 true
-        bool IsFinished();
+        bool GetIsFinished();
     }
 
     public interface ISeedManager

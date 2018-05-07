@@ -71,7 +71,7 @@ namespace Modules
     }
 
     [Serializable]
-    public struct ScenarioSet : ICloneable
+    public struct ScenarioData : ICloneable
     {
         public int ScenarioNo;
         public double[] scenarioData;
@@ -83,9 +83,11 @@ namespace Modules
     }
 
     [Serializable]
-    public struct ScenarioFullSet
+    public struct ScenarioSet
     {
-        public string scnName;
-        public List<ScenarioSet> scnValue;
+        public string ScnName;
+        public List<ScenarioData> ScnValue;
     }
+
+    
 }

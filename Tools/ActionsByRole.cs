@@ -47,7 +47,7 @@ namespace NetComponents
                     }
 
                     //seed 모두 로딩되면, sm.Allo 비었으면, sm.NotAllo 비었으면, rm.Finish이면
-                    isCompleted = sl.IsFinished() && sm.IsEmpty();
+                    isCompleted = sl.GetIsFinished() && sm.IsEmpty();
                 }
             }
             catch
