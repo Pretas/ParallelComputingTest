@@ -9,7 +9,7 @@ namespace NetComponents
     public abstract class ProjectionFamily
     {
         public IInputManager im;
-        public ISeedLoader sl;
+        public IDBConnector sl;
         public ISeedManager sm;
         public IResultManager rm;
         public IProjector projector;
@@ -23,8 +23,10 @@ namespace NetComponents
 
     public interface IInputManager
     {
-        // DB에서 인풋 로딩
+        // Head가 DB에서 받은 인풋 저장할 때
         void LoadInput();
+        // Lower가 Upper에게서 받은 인풋 저장할 때
+        void InsertInput(InputContainer ic);
         // 사용처에서 인풋 가져갈 때
         InputContainer GetInput();
         // 인풋 로딩이 끝났을 때 True 입력
@@ -35,7 +37,7 @@ namespace NetComponents
 
     abstract public class InputContainer { }
 
-    public interface ISeedLoader
+    public interface IDBConnector
     {
         // 초기화, 불러와야 할 총 인풋리스트 저장
         void Init();
@@ -43,6 +45,8 @@ namespace NetComponents
         bool GetIsLackOfSeed();
         // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
         void LoadSeed(out SeedIndex si, out SeedContainer sc);
+        void InsertResultToDB(Result result);
+
         // 모든 시드가 로딩 되었으면 true
         bool GetIsFinished();
     }
@@ -50,7 +54,7 @@ namespace NetComponents
     public interface ISeedManager
     {
         void InsertSeed(SeedIndex si, SeedContainer sc);
-        void PickUpAndAllocateSeed(int coreNo, out SeedIndex si);
+        void PickUpAndAllocateSeed(int coreNo, int unit, out SeedIndex si);
         void RemoveAllocatedSeed(int coreNo, SeedIndex si);
         void RearrangeSeedContainer();
         void ReturnBackSeed(int coreNo);
@@ -106,6 +110,18 @@ namespace NetComponents
 
     public class Communicator
     {
+        // ***** 싱글턴 구현부
+        protected static Communicator ST;
+        protected Communicator() { }
+        protected static object SyncLock = new object();
+
+        public static Communicator GetSingleton()
+        {
+            if (ST == null) lock (SyncLock) if (ST == null) ST = new Communicator();
+            return ST;
+        }
+        // *****
+
         private static object SyncLockComm = new object();
 
         public object Communicate(CommJobName jn, ref ISeedManager sm, ref IResultManager rm, object input)
@@ -124,9 +140,11 @@ namespace NetComponents
                 }
                 else if (jn == CommJobName.AllocateSeed)
                 {
-                    int coreNo = (int)input;
+                    Tuple<int, int> input2 = (Tuple<int, int>)input;
+                    int coreNo = input2.Item1;
+                    int unit = input2.Item2;
                     SeedIndex si;
-                    sm.PickUpAndAllocateSeed(coreNo, out si);
+                    sm.PickUpAndAllocateSeed(coreNo, unit, out si);
                     res = si;
                 }
                 else if (jn == CommJobName.ReturnBackSeed)
@@ -151,7 +169,7 @@ namespace NetComponents
                     Result sumUpRes;
                     rm.SumUp(out si, out sumUpRes);
                     rm.ClearResult();
-                    res = sumUpRes;
+                    res = Tuple.Create(si, sumUpRes);
                 }
 
                 return res;

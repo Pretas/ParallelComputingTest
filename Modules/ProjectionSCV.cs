@@ -57,7 +57,7 @@ namespace Modules
         }
     }
 
-    public class SeedLoaderSCV : ISeedLoader
+    public class SeedLoaderSCV : IDBConnector
     {
         SeedIndexSCV SeedIndexResidual = new SeedIndexSCV();
         Dictionary<int, Tuple<int, int>> PolIndexTotal = new Dictionary<int, Tuple<int, int>>();
@@ -102,7 +102,7 @@ namespace Modules
             {
                 foreach (var scn in ScnIndexTotal)
                 {
-                    SeedIndexResidual.SeedIndex.Add(Tuple.Create(pol.Key, scn.Key));
+                    SeedIndexResidual.List.Add(Tuple.Create(pol.Key, scn.Key));
                 }
             }
         }
@@ -116,17 +116,17 @@ namespace Modules
 
         public bool GetIsFinished()
         {
-            if (SeedIndexResidual.SeedIndex.Count == 0) return true;
+            if (SeedIndexResidual.List.Count == 0) return true;
             else return false;
         }
         
         public void LoadSeed(out SeedIndex si, out SeedContainer sc)
         {
-            // 유닛 만큼 시드인덱스 가져오기
+            // 유닛 만큼 시드인덱스 가져오기            
+            int cnt = Math.Max(SeedIndexResidual.List.Count, LoadUnit);
             SeedIndexSCV siNew = new SeedIndexSCV();
-            int cnt = Math.Max(SeedIndexResidual.SeedIndex.Count, LoadUnit);
-            siNew.SeedIndex = SeedIndexResidual.SeedIndex.GetRange(0, cnt - 1); // 원하는 만큼 가져오기
-            SeedIndexResidual.SeedIndex.RemoveRange(0, cnt - 1); // 가져온 부분 삭제
+            siNew.List.GetRange(0, cnt - 1); // 원하는 만큼 가져오기
+            SeedIndexResidual.List.RemoveRange(0, cnt - 1); // 가져온 부분 삭제
 
             // 필요한 시드를 받음
             SeedManagerSCV sm = SeedManagerSCV.GetSingleton();
@@ -134,12 +134,13 @@ namespace Modules
 
             // 씨드 로딩
             SeedContainerSCV scNew = new SeedContainerSCV();
+            // --인포스 로딩
             foreach (int item in sic.InforceSeedIndex)
             {
                 InforceComposer ic = new InforceComposer(PolIndexTotal[item].Item2 - PolIndexTotal[item].Item1 + 1);
                 scNew.InforceSeed.Add(item, ic.GetInforceSet());
             }
-
+            // --시나리오 로딩
             foreach (int item in sic.ScenarioSeedIndex)
             {
                 ScenarioComposer scnComposer = new ScenarioComposer(1000, 1200);
@@ -153,6 +154,7 @@ namespace Modules
 
     public class SeedManagerSCV : ISeedManager
     {
+        // ***** 싱글턴 구현부
         protected static SeedManagerSCV ST;
         protected SeedManagerSCV() { }
         protected static object SyncLock = new object();
@@ -162,13 +164,71 @@ namespace Modules
             if (ST == null) lock (SyncLock) if (ST == null) ST = new SeedManagerSCV();
             return ST;
         }
+        // *****
 
-        private SeedContainerSCV SC = new SeedContainerSCV();
         private SeedIndexSCV SeedNotAllocated = new SeedIndexSCV();
         private Dictionary<int, SeedIndexSCV> SeedAllocated = new Dictionary<int, SeedIndexSCV>();
+        private SeedContainerSCV SC = new SeedContainerSCV();        
         private bool IsMoreSeedFromUpperLayer = true;
 
-        public bool GetIsMoreSeedFromUpperLayer()
+        public void InsertSeed(SeedIndex si, SeedContainer sc)
+        {
+            SeedIndexSCV seedIndexFrom = (SeedIndexSCV)si;
+            SeedContainerSCV seedContainerFrom = (SeedContainerSCV)sc;
+
+            SeedNotAllocated.List.AddRange(seedIndexFrom.List);
+            foreach (var item in seedContainerFrom.InforceSeed)
+            {
+                SC.InforceSeed.Add(item.Key, item.Value);
+            }
+            foreach (var item in seedContainerFrom.ScenarioSeed)
+            {
+                SC.ScenarioSeed.Add(item.Key, item.Value);
+            }
+        }
+
+        public void PickUpAndAllocateSeed(int coreNo, int unit, out SeedIndex si)
+        {
+            // SeedNotAllocated 에서 골라와 저장
+            SeedIndexSCV siPicked = new SeedIndexSCV();
+            int cnt = Math.Max(SeedNotAllocated.List.Count, unit);
+            siPicked.List.AddRange(SeedNotAllocated.List.GetRange(0, cnt - 1));
+
+            // SeedNotAllocated 삭제
+            SeedNotAllocated.List.RemoveRange(0, cnt - 1);
+
+            // SeedAllocate에 저장
+            if (!SeedAllocated.ContainsKey(coreNo)) SeedAllocated.Add(coreNo, new SeedIndexSCV());
+            foreach (var item in siPicked.List)
+            {
+                SeedAllocated[coreNo].List.Add(item);
+            }
+
+            // 골라온 부분 리턴
+            si = siPicked;
+        }
+
+        public void RemoveAllocatedSeed(int coreNo, SeedIndex si)
+        {
+            SeedIndexSCV siCopy = (SeedIndexSCV)si;
+
+            if (SeedAllocated.ContainsKey(coreNo))
+            {
+                foreach (var item in siCopy.List)
+                {
+                    int index = SeedAllocated[coreNo].List.IndexOf(item);
+                    if (index == -1) throw new Exception(string.Format(@"'{0}, {1}'는 없는 객체입니다.", item.Item1.ToString(), item.Item2.ToString()));
+                    SeedAllocated[coreNo].List.RemoveAt(index);
+                }
+            }
+        }
+
+        public void RearrangeSeedContainer()
+        {
+            
+        }
+
+        public void ReturnBackSeed(int coreNo)
         {
             throw new NotImplementedException();
         }
@@ -178,17 +238,17 @@ namespace Modules
             throw new NotImplementedException();
         }
 
-        public SeedIndexCompart GetSeedIndexNotInSeedContainer(SeedIndex si)
-        {
-            throw new NotImplementedException();
-        }
-
         public SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic)
         {
             throw new NotImplementedException();
         }
 
-        public void InsertSeed(SeedIndex si, SeedContainer sc)
+        public void SetIsMoreSeedFromUpperLayer(bool isFinished)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool GetIsMoreSeedFromUpperLayer()
         {
             throw new NotImplementedException();
         }
@@ -203,37 +263,12 @@ namespace Modules
             throw new NotImplementedException();
         }
 
-        public SeedIndex PickUpAndAllocateSeed(int coreNo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RearrangeSeedContainer()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RemoveAllocatedSeed(int coreNo, SeedIndex si)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ReturnBackSeed(int coreNo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SetIsMoreSeedFromUpperLayer(bool isFinished)
+        public SeedIndexCompart GetSeedIndexNotInSeedContainer(SeedIndex si)
         {
             throw new NotImplementedException();
         }
 
         public int GetSeedCountNotAllocated()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void PickUpAndAllocateSeed(int coreNo, out SeedIndex si)
         {
             throw new NotImplementedException();
         }
@@ -296,7 +331,7 @@ namespace Modules
 
         public Result Execute()
         {
-            foreach (SeedIndex item in siList)
+            foreach (SeedIndex item in siList.List)
             {
                 //object input = GetSpecificInput(item);
                 //ProjectionData pjd = Run(item);
@@ -321,7 +356,8 @@ namespace Modules
     public class SeedIndexSCV : SeedIndex
     {
         // List<Tuple<Inforce Index, Scenario Index>>
-        public List<Tuple<int, int>> SeedIndex = new List<Tuple<int, int>>();
+        public List<Tuple<int, int>> List = new List<Tuple<int, int>>();       
+        
     }
 
     public class SeedIndexCompartSCV : SeedIndexCompart
