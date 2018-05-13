@@ -15,7 +15,7 @@ namespace NetComponents
         public ActionOfHead(int jobUnitNo)
         { JobUnitNo = jobUnitNo; }
         
-        public void DoJob(IInputManager im, IDBConnector conn, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
+        public void DoJob(InputManager im, DBConnector conn, SeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
         {
             try
             {
@@ -81,7 +81,7 @@ namespace NetComponents
             LayerNo = layerNo; ThisCoreNo = thisCoreNo; JobUnitNo = jobUnitNo; LowerSock = lowerSock;
         }
 
-        public void DoJob(IInputManager im, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
+        public void DoJob(InputManager im, SeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
         {
             try
             {
@@ -156,7 +156,7 @@ namespace NetComponents
             LayerNo = layerNo; ThisCoreNo = thisCoreNo; JobUnitNo = jobUnitNo; UpperSock = upperSock;
         }
 
-        public void DoJob(IInputManager im, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
+        public void DoJob(InputManager im, SeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm)
         {
             try
             {
@@ -238,7 +238,7 @@ namespace NetComponents
             LayerNo = layerNo; ThisCoreNo = thisCoreNo; JobUnitNo = jobUnitNo;
         }
 
-        public void DoJob(IInputManager im, ISeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, IProjector projector, Func<InputContainer, SeedContainer, ProjectionData> funcRun)
+        public void DoJob(InputManager im, SeedManager sm, IResultManager rm, ExceptionManager em, Communicator comm, IProjector projector, Func<InputContainer, SeedContainer, ProjectionData> funcRun)
         {
             try
             {

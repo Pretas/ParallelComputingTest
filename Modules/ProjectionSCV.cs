@@ -4,16 +4,16 @@ using System.Collections.Generic;
 
 namespace Modules
 {
-    public class SCVProjectionFamily : ProjectionFamily
+    public class SCVProjectionFamily
     {
         public InputManagerSCV im;
-        public SeedLoaderSCV sl;
+        public DBConnectorSCV db;
         public SeedManagerSCV sm;
         public ResultManagerSCV rm;
-        public ProjectorSCV projector;
+        public ProjectorSCV projector;        
     }
 
-    public class InputManagerSCV : IInputManager
+    public class InputManagerSCV : InputManager
     {
         // ***** 싱글턴 구현부
         protected static InputManagerSCV ST;
@@ -30,7 +30,7 @@ namespace Modules
         private InputContainerSCV IC;
         private bool IsCompletedLoading = false;
 
-        public void LoadInput()
+        public override void LoadInput()
         {
             IC = new InputContainerSCV();
 
@@ -38,33 +38,44 @@ namespace Modules
             IC.productsInfo.Add(2, new ProductInfo { ProductCode = 2, GmxbRatio = 0.006 });
 
             IC.loadings.Add(1, new Loadings { ProductCode = 1, AlphaRatio = 1.0 });
-            IC.loadings.Add(2, new Loadings { ProductCode = 2, AlphaRatio = 2.0 });            
+            IC.loadings.Add(2, new Loadings { ProductCode = 2, AlphaRatio = 2.0 });
         }
 
-        public bool GetCompleteLoading()
+        public override void InsertInput(InputContainer ic)
+        {
+            InputContainerSCV icNew = (InputContainerSCV)ic;
+            InputManagerSCV im = InputManagerSCV.GetSingleton();
+
+            foreach (var item in icNew.productsInfo) im.IC.productsInfo.Add(item.Key, item.Value);
+            foreach (var item in icNew.loadings) im.IC.loadings.Add(item.Key, item.Value);
+        }
+
+        public override bool GetCompleteLoading()
         {
             return IsCompletedLoading;
         }
 
-        public void SetCompleteLoading()
+        public override void SetCompleteLoading()
         {
             IsCompletedLoading = true;
         }
 
-        public InputContainer GetInput()
+        public override InputContainer GetInput()
         {
             return IC;
-        }
+        }               
     }
 
-    public class SeedLoaderSCV : IDBConnector
+    public class DBConnectorSCV : DBConnector
     {
         SeedIndexSCV SeedIndexResidual = new SeedIndexSCV();
         Dictionary<int, Tuple<int, int>> PolIndexTotal = new Dictionary<int, Tuple<int, int>>();
         Dictionary<int, string> ScnIndexTotal = new Dictionary<int, string>();        
         int LoadUnit = 50;
 
-        public void Init()
+        private bool IsFinished = false;
+
+        public override void Init()
         {
             int ePol, cPol;
 
@@ -107,20 +118,14 @@ namespace Modules
             }
         }
 
-        public bool GetIsLackOfSeed()
+        public override bool GetIsLackOfSeed()
         {
             SeedManagerSCV sm = SeedManagerSCV.GetSingleton();
             if (sm.GetSeedCountNotAllocated() < LoadUnit) return true;
             else return false;
         }
-
-        public bool GetIsFinished()
-        {
-            if (SeedIndexResidual.List.Count == 0) return true;
-            else return false;
-        }
-        
-        public void LoadSeed(out SeedIndex si, out SeedContainer sc)
+           
+        public override void LoadSeed(out SeedIndex si, out SeedContainer sc)
         {
             // 유닛 만큼 시드인덱스 가져오기            
             int cnt = Math.Max(SeedIndexResidual.List.Count, LoadUnit);
@@ -150,9 +155,25 @@ namespace Modules
             si = siNew;
             sc = scNew;
         }
+
+        public override void InsertResultToDB(Result result)
+        {
+            Console.WriteLine("Insert Result");
+        }
+
+        public override void SetIsFinished(bool yn)
+        {
+            IsFinished = yn;
+        }
+
+        public override bool GetIsFinished()
+        {
+            if (SeedIndexResidual.List.Count == 0) return true;
+            else return false;
+        }
     }
 
-    public class SeedManagerSCV : ISeedManager
+    public class SeedManagerSCV : SeedManager
     {
         // ***** 싱글턴 구현부
         protected static SeedManagerSCV ST;
@@ -171,7 +192,7 @@ namespace Modules
         private SeedContainerSCV SC = new SeedContainerSCV();        
         private bool IsMoreSeedFromUpperLayer = true;
 
-        public void InsertSeed(SeedIndex si, SeedContainer sc)
+        public override void InsertSeed(SeedIndex si, SeedContainer sc)
         {
             SeedIndexSCV seedIndexFrom = (SeedIndexSCV)si;
             SeedContainerSCV seedContainerFrom = (SeedContainerSCV)sc;
@@ -187,7 +208,7 @@ namespace Modules
             }
         }
 
-        public void PickUpAndAllocateSeed(int coreNo, int unit, out SeedIndex si)
+        public override void PickUpAndAllocateSeed(int coreNo, int unit, out SeedIndex si)
         {
             // SeedNotAllocated 에서 골라와 저장
             SeedIndexSCV siPicked = new SeedIndexSCV();
@@ -208,7 +229,7 @@ namespace Modules
             si = siPicked;
         }
 
-        public void RemoveAllocatedSeed(int coreNo, SeedIndex si)
+        public override void RemoveAllocatedSeed(int coreNo, SeedIndex si)
         {
             SeedIndexSCV siCopy = (SeedIndexSCV)si;
 
@@ -223,52 +244,47 @@ namespace Modules
             }
         }
 
-        public void RearrangeSeedContainer()
+        public override void RearrangeSeedContainer()
         {
-            
+            // SeedContainer에 필요없는 씨드 삭제            
         }
 
-        public void ReturnBackSeed(int coreNo)
+        public override void ReturnBackSeed(int coreNo)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public override SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic)
         {
             throw new NotImplementedException();
         }
 
-        public SeedContainer GetSeed()
+        public override void SetIsMoreSeedFromUpperLayer(bool isFinished)
         {
             throw new NotImplementedException();
         }
 
-        public SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic)
+        public override bool GetIsMoreSeedFromUpperLayer()
         {
             throw new NotImplementedException();
         }
 
-        public void SetIsMoreSeedFromUpperLayer(bool isFinished)
+        public override bool IsEmpty()
+        {
+            throw new NotImplementedException();
+        }
+        
+        public override SeedIndexCompart GetSeedIndexNotInSeedContainer(SeedIndex si)
         {
             throw new NotImplementedException();
         }
 
-        public bool GetIsMoreSeedFromUpperLayer()
+        public override int GetSeedCountNotAllocated()
         {
             throw new NotImplementedException();
         }
 
-        public bool IsEmpty()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool IsLackOfSeed()
-        {
-            throw new NotImplementedException();
-        }
-
-        public SeedIndexCompart GetSeedIndexNotInSeedContainer(SeedIndex si)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int GetSeedCountNotAllocated()
+        public override bool GetIsLackOfSeed()
         {
             throw new NotImplementedException();
         }
@@ -296,7 +312,7 @@ namespace Modules
             throw new NotImplementedException();
         }
 
-        public bool IsEmpty()
+        public bool GetIsEmpty()
         {
             throw new NotImplementedException();
         }
@@ -380,13 +396,5 @@ namespace Modules
     { }
         
     public class ProjectionDataSCV
-    { }
-
-
-    
-
-    
-
-
-    
+    { }    
 }

@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace NetComponents
 {
-    public abstract class ProjectionFamily
+    public abstract class NetComponentFamily
     {
-        public IInputManager im;
-        public IDBConnector sl;
-        public ISeedManager sm;
+        public InputManager im;
+        public DBConnector sl;
+        public SeedManager sm;
         public IResultManager rm;
         public IProjector projector;
         //public InputContainer inputContainer;
@@ -20,55 +20,65 @@ namespace NetComponents
         //public Result result;
         //public ProjectionData pjd;
     }
-
-    public interface IInputManager
+    
+    public abstract class InputManager
     {
         // Head가 DB에서 받은 인풋 저장할 때
-        void LoadInput();
+        public abstract void LoadInput();
         // Lower가 Upper에게서 받은 인풋 저장할 때
-        void InsertInput(InputContainer ic);
+        public abstract void InsertInput(InputContainer ic);
         // 사용처에서 인풋 가져갈 때
-        InputContainer GetInput();
+        public abstract InputContainer GetInput();
         // 인풋 로딩이 끝났을 때 True 입력
-        void SetCompleteLoading();
+        public abstract void SetCompleteLoading();
         // 인풋 로딩이 끝났는지 알고 싶을 때
-        bool GetCompleteLoading();
+        public abstract bool GetCompleteLoading();
     }
 
     abstract public class InputContainer { }
 
-    public interface IDBConnector
+    public abstract class DBConnector
     {
         // 초기화, 불러와야 할 총 인풋리스트 저장
-        void Init();
+        public abstract void Init();
         // 시드 개수가 부족한지 체크
-        bool GetIsLackOfSeed();
+        public abstract bool GetIsLackOfSeed();
         // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
-        void LoadSeed(out SeedIndex si, out SeedContainer sc);
-        void InsertResultToDB(Result result);
-
+        public abstract void LoadSeed(out SeedIndex si, out SeedContainer sc);
+        // 산출결과를 디비에 입력
+        public abstract void InsertResultToDB(Result result);
         // 모든 시드가 로딩 되었으면 true
-        bool GetIsFinished();
+        public abstract void SetIsFinished(bool yn);
+        // 모든 시드가 로딩 되었는지 가져옴
+        public abstract bool GetIsFinished();
     }
 
-    public interface ISeedManager
+    public abstract class SeedManager
     {
-        void InsertSeed(SeedIndex si, SeedContainer sc);
-        void PickUpAndAllocateSeed(int coreNo, int unit, out SeedIndex si);
-        void RemoveAllocatedSeed(int coreNo, SeedIndex si);
-        void RearrangeSeedContainer();
-        void ReturnBackSeed(int coreNo);
-
-        SeedContainer GetSeed();
-        SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic);
-               
-        void SetIsMoreSeedFromUpperLayer(bool isFinished);
-        bool GetIsMoreSeedFromUpperLayer();
+        // Upper에서 받은 씨드 입력
+        public abstract void InsertSeed(SeedIndex si, SeedContainer sc);
+        // 특정 Lower에게 씨드인덱스 할당
+        public abstract void PickUpAndAllocateSeed(int coreNo, int unit, out SeedIndex si);
+        // 작업이 끝난 뒤 씨드인덱스 삭제
+        public abstract void RemoveAllocatedSeed(int coreNo, SeedIndex si);
+        // SeedContainer에 필요없는 씨드 삭제
+        public abstract void RearrangeSeedContainer();
+        // Lower에 에러났을 때 할당된 씨드인덱스를 회수
+        public abstract void ReturnBackSeed(int coreNo);
+        // 아래층에서 요청받은 씨드
+        public abstract SeedContainer GetSeedRequiredFromLowerLayer(SeedIndexCompart sic);
+        // 위층에서 씨드가 더이상 있는지 없는지 입력
+        public abstract void SetIsMoreSeedFromUpperLayer(bool isFinished);
+        // 위층에서 씨드가 더이상 있는지 없는지 가져옴
+        public abstract bool GetIsMoreSeedFromUpperLayer();
         // 배분되기 전의 시드, 배분된 시드 모두가 비어있으면
-        bool IsEmpty();
-        bool IsLackOfSeed();
-        SeedIndexCompart GetSeedIndexNotInSeedContainer(SeedIndex si);
-        int GetSeedCountNotAllocated();
+        public abstract bool IsEmpty();
+        // 시드인덱스가 모자른지
+        public abstract bool GetIsLackOfSeed();
+        // 새로 받은 씨드인덱스 중에서 씨드컨테이너에 없는 씨드인덱스 추림(씨드컨테이너 받기 위해)
+        public abstract SeedIndexCompart GetSeedIndexNotInSeedContainer(SeedIndex si);
+        // 할당되지 않은 씨드인덱스 개수
+        public abstract int GetSeedCountNotAllocated();
     }
 
     abstract public class SeedContainer { }
@@ -79,27 +89,37 @@ namespace NetComponents
 
     public interface IResultManager
     {
+        // 런이 끝난 결과를 쌓기
         void StackResult(SeedIndex resIndex, Result resReal);
+        // 런결과가 많이 쌓여서 집계를 할지 말지 체크 
         bool CheckNeedSumUp();
+        // 집계되어 위층으로 보낸 후 비우기
         void ClearResult();
+        // 집계함수
         void SumUp(out SeedIndex si, out Result res);
+        // 집계한 후 위로 보내기
         void UploadResult();
         // 쌓여있는 결과가 없으면
-        bool IsEmpty();
+        bool GetIsEmpty();
     }
 
     public abstract class Result { }
 
     public class ExceptionManager
     {
-        public bool HasType0Error = false; // Head or Lower의 에러가 발생시 true
-        public List<int> type1Errors = new List<int>(); // Upper에러 발생시 코어이름 등재함
+        // Head or Lower의 에러가 발생시 true
+        public bool HasType0Error = false;
+        // Upper에러 발생시 코어이름 등재함
+        public List<int> type1Errors = new List<int>(); 
     }
 
     public interface IProjector
     {
+        // 인풋, 런함수 세팅
         void Init(InputContainer ic, Func<InputContainer, SeedContainer, ProjectionData> funcRun);
+        // 런 실행
         Result Execute();
+        // 단건씩 런 실행 후 결과 집계
         void SumUp(ProjectionData pjd, ref Result baseResult);
     }
 
@@ -124,7 +144,7 @@ namespace NetComponents
 
         private static object SyncLockComm = new object();
 
-        public object Communicate(CommJobName jn, ref ISeedManager sm, ref IResultManager rm, object input)
+        public object Communicate(CommJobName jn, ref SeedManager sm, ref IResultManager rm, object input)
         {
             object res = new object();
 
