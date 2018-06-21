@@ -20,31 +20,19 @@ namespace NetComponents
         //public Result result;
         //public ProjectionData pjd;
     }
-    
-    public abstract class InputManager
-    {
-        // Head가 DB에서 받은 인풋 저장할 때
-        public abstract void LoadInput();
-        // Lower가 Upper에게서 받은 인풋 저장할 때
-        public abstract void InsertInput(InputContainer ic);
-        // 사용처에서 인풋 가져갈 때
-        public abstract InputContainer GetInput();
-        // 인풋 로딩이 끝났을 때 True 입력
-        public abstract void SetCompleteLoading();
-        // 인풋 로딩이 끝났는지 알고 싶을 때
-        public abstract bool GetCompleteLoading();
-    }
-
-    abstract public class InputContainer { }
-
+        
     public abstract class DBConnector
     {
+        public SeedIndex totalSeedIndex { get; private set; }
+
         // 초기화, 불러와야 할 총 인풋리스트 저장
-        public abstract void Init();
+        public abstract void LoadInput(ref InputManager im);
+        // 전체 시드인덱스 리스트 생성, totalSeedIndex에 영향
+        public abstract void ListUpTotalSeedIndex();
         // 시드 개수가 부족한지 체크
-        public abstract bool GetIsLackOfSeed();
+        public abstract bool GetIsShortOfSeed(SeedManager sm, int unit);
         // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
-        public abstract void LoadSeed(out SeedIndex si, out SeedContainer sc);
+        public abstract void LoadSeed(ref SeedManager sm, int unit);
         // 산출결과를 디비에 입력
         public abstract void InsertResultToDB(Result result);
         // 모든 시드가 로딩 되었으면 true
@@ -52,6 +40,20 @@ namespace NetComponents
         // 모든 시드가 로딩 되었는지 가져옴
         public abstract bool GetIsFinished();
     }
+
+    public abstract class InputManager
+    {
+        public bool IsDoneLoading { get; private set; }
+        public InputContainer InputData { get; private set; }
+
+        // Lower가 Upper에게서 받은 인풋 저장할 때
+        public abstract void InsertInput(InputContainer ic);
+        // 인풋 로딩이 끝났을 때 True 입력
+        public abstract void SetCompleteLoading();
+    }
+
+    abstract public class InputContainer { }
+
 
     public abstract class SeedManager
     {

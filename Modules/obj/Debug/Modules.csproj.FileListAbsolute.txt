@@ -6,3 +6,6 @@ D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.csprojResolveAs
 D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.csproj.CoreCompileInputs.cache
 D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.dll
 D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.pdb
+D:\Programming\ParallelComputingPilot\Modules\obj\Debug\Modules.csprojResolveAssemblyReference.cache
+D:\Programming\ParallelComputingPilot\Modules\obj\Debug\Modules.dll
+D:\Programming\ParallelComputingPilot\Modules\obj\Debug\Modules.pdb

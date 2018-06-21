@@ -189,7 +189,7 @@ namespace Modules
 
         private SeedIndexSCV SeedNotAllocated = new SeedIndexSCV();
         private Dictionary<int, SeedIndexSCV> SeedAllocated = new Dictionary<int, SeedIndexSCV>();
-        private SeedContainerSCV SC = new SeedContainerSCV();        
+        private SeedContainerSCV SC = new SeedContainerSCV();
         private bool IsMoreSeedFromUpperLayer = true;
 
         public override void InsertSeed(SeedIndex si, SeedContainer sc)

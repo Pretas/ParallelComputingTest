@@ -175,7 +175,7 @@ namespace NetComponents
                 while (true)
                 {
                     // 시드 받기
-                    bool isLackOfSeed = sm.IsLackOfSeed();
+                    bool isLackOfSeed = sm.GetIsLackOfSeed();
                     Tools.SendReceive.SendGeneric(UpperSock, isLackOfSeed);
                     if (isLackOfSeed)
                     {

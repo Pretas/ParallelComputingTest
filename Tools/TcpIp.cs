@@ -13,58 +13,75 @@ namespace Tools
     {
         public static void SendGeneric<T>(Socket clientSock, T obj)
         {
-            byte[] dataByte = Tools.SerializationUtil.SerializeToByte(obj);
-            Tools.SendReceive.send(clientSock, dataByte);
+            byte[] dataByte = SerializationUtil.SerializeToByte(obj);
+            send(clientSock, dataByte);
         }
 
         public static T ReceiveGeneric<T>(Socket clientSock)
         {
-            byte[] dataByte = (byte[])Tools.SendReceive.Receive(clientSock);
-            T data = (T)Tools.SerializationUtil.DeserializeToObject(dataByte);
-            return data;
+            object obj = Receive(clientSock);
+            if (obj != null)
+            {
+                byte[] dataByte = Receive(clientSock);
+                T data = (T)SerializationUtil.DeserializeToObject(dataByte);
+                return data;
+            }
+            else
+            { return default(T); }
         }
 
         public static void send(Socket clientSock, byte[] data)
         {
-            //글자수 전송
-            int dl = data.Length;
+            // 객체의 바이트수 계산, null이거나 바이트가 0이면 실데이터는 전송하지 않음
+            int dl = 0;
+            if (data != null) dl = data.Length;
+
+            // 객체의 바이트수  전송
             byte[] dlb = BitConverter.GetBytes(dl);
             clientSock.Send(dlb);
 
             //답변
             byte[] lb1 = new byte[8196];
-            clientSock.Receive(lb1);
-            //bool lbool1 = BitConverter.ToBoolean(lb1, 0);
+            clientSock.Receive(lb1);            
             
-            //메모리전송
-            clientSock.Send(data);
-
-            //답변
-            byte[] lb2 = new byte[8196];
-            clientSock.Receive(lb2);
-            //bool lbool1 = BitConverter.ToBoolean(lb1, 0);
-            //BitConverter.ToInt32(bytes, 0);
+            // 바이트수가 0 이상이어야 실데이터가 있으므로 전송
+            if (dl > 0)
+            {
+                //메모리전송
+                clientSock.Send(data);
+                //답변
+                byte[] lb2 = new byte[8196];
+                clientSock.Receive(lb2);
+            }
         }
 
         public static byte[] Receive(Socket clientSock)
         {
-            //길이 받기
+            // 바이트수 받기
             byte[] dlb = new byte[8196];
             clientSock.Receive(dlb);
             int length = BitConverter.ToInt32(dlb, 0);
 
-            //true 반환
+            // true 반환
             clientSock.Send(BitConverter.GetBytes(true));
 
-            //데이터 받기
-            byte[] data = new byte[length];
-            clientSock.Receive(data);
+            // 바이트수가 0 이상이어야 실데이터가 있으므로 받음
+            if (length > 0)
+            {
+                // 데이터 받기
+                byte[] data = new byte[length];
+                clientSock.Receive(data);
 
-            //결과 반환
-            clientSock.Send(BitConverter.GetBytes(true));
+                // 결과 반환
+                clientSock.Send(BitConverter.GetBytes(true));
 
-            return data;
-        }        
+                return data;
+            }
+            else
+            {
+                return null;
+            }
+        }
     }
 
     public class ServerSocket

@@ -17,7 +17,7 @@ namespace Tools
             MemoryStream stream = new MemoryStream();
             stream.Position = 0;
             BinaryFormatter bf = new BinaryFormatter();
-            bf.Binder = new AlwaysBrandNewDeserializationBinder();
+            //bf.Binder = new AlwaysBrandNewDeserializationBinder(); 사용안하기로함
             bf.Serialize(stream, obj);
             return stream.ToArray();
         }
@@ -32,7 +32,7 @@ namespace Tools
             }
             stream.Position = 0;
             BinaryFormatter bf = new BinaryFormatter();
-            bf.Binder = new AlwaysBrandNewDeserializationBinder();
+            //bf.Binder = new AlwaysBrandNewDeserializationBinder(); 사용안하기로함
             return bf.Deserialize(stream);
         }
 
