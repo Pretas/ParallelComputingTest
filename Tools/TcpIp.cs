@@ -34,53 +34,76 @@ namespace Tools
         {
             // 객체의 바이트수 계산, null이거나 바이트가 0이면 실데이터는 전송하지 않음
             int dl = 0;
-            if (data != null) dl = data.Length;
+            if (data != null || data.Length == 0) dl = data.Length;
 
-            // 객체의 바이트수  전송
+            // 객체의 바이트수 전송
             byte[] dlb = BitConverter.GetBytes(dl);
             clientSock.Send(dlb);
 
-            //답변
-            byte[] lb1 = new byte[8196];
-            clientSock.Receive(lb1);            
-            
+            // 객체의 바이트수 답변 받음
+            byte[] lb1 = GetBytesFromStream(clientSock, 4);
+
+            // 객체의 바이트수가 잘 전달되었는지 체크
+            bool isRightLength = true;
+            for (int i = 0; i < 4; i++)
+            {
+                if (dlb[i] != lb1[i]) isRightLength = false;
+            }
+
+            // 잘 전달되었는지 아닌지 전송, 잘못 전송되었다면 예외처리
+            if (isRightLength == true)
+            {
+                clientSock.Send(Encoding.UTF8.GetBytes(@"!#%&("));
+            }
+            else
+            {
+                clientSock.Send(Encoding.UTF8.GetBytes(@"@$^*)"));
+                throw new Exception(@"incorrect message length sended");
+            }
+
             // 바이트수가 0 이상이어야 실데이터가 있으므로 전송
             if (dl > 0)
             {
                 //메모리전송
                 clientSock.Send(data);
-                //답변
-                byte[] lb2 = new byte[8196];
-                clientSock.Receive(lb2);
             }
         }
 
         public static byte[] Receive(Socket clientSock)
         {
-            // 바이트수 받기
-            byte[] dlb = new byte[8196];
-            clientSock.Receive(dlb);
-            int length = BitConverter.ToInt32(dlb, 0);
+            // 객체의 바이트수 수신
+            byte[] dlb = GetBytesFromStream(clientSock, 4);
 
-            // true 반환
-            clientSock.Send(BitConverter.GetBytes(true));
+            // 객체 바이트수 발신(echo)
+            clientSock.Send(dlb);
 
-            // 바이트수가 0 이상이어야 실데이터가 있으므로 받음
-            if (length > 0)
+            // 올바른 바이트수였는지 여부 수신
+            // : "!#%&(" 이면 OK, "@$^*)"이면 에러
+            byte[] respond = GetBytesFromStream(clientSock, 5);
+
+            // 데이터 길이가 맞는지 다시 확인받음
+            string respondStr = Encoding.UTF8.GetString(respond);
+            if (respondStr == @"@$^*)") throw new Exception(@"incorrect message length received");
+
+            int lth = BitConverter.ToInt16(dlb, 0);
+            if (lth > 0)
             {
-                // 데이터 받기
-                byte[] data = new byte[length];
-                clientSock.Receive(data);
-
-                // 결과 반환
-                clientSock.Send(BitConverter.GetBytes(true));
-
-                return data;
+                byte[] dataReceived = GetBytesFromStream(clientSock, lth);
+                return dataReceived;
             }
-            else
+            else return null;
+        }
+
+        private static byte[] GetBytesFromStream(Socket sock, int lth)
+        {
+            byte[] dataBytes = new byte[lth];
+            for (int i = 0; i < lth; i++)
             {
-                return null;
+                byte[] tick = new byte[1];
+                sock.Receive(tick);
+                dataBytes[i] = tick[0];
             }
+            return dataBytes;
         }
     }
 
@@ -99,22 +122,9 @@ namespace Tools
 
             // (3) 포트 Listening 시작
             sock.Listen(10);
-
+            
             // (4) 연결을 받아들여 새 소켓 생성 (하나의 연결만 받아들임)
             clientSock = sock.Accept();
-
-            //byte[] buff = new byte[8192];
-            //while (!Console.KeyAvailable) // 키 누르면 종료
-            //{
-            //    // (5) 소켓 수신
-            //    int n = clientSock.Receive(buff);
-
-            //    string data = Encoding.UTF8.GetString(buff, 0, n);
-            //    Console.WriteLine(data);
-
-            //    // (6) 소켓 송신
-            //    clientSock.Send(buff, 0, n, SocketFlags.None);  // echo
-            //}
         }
 
         public void Close()
@@ -137,36 +147,12 @@ namespace Tools
             // (2) 서버에 연결
             IPEndPoint ep = new IPEndPoint(IPAddress.Parse(serverIP), port);
             sock.Connect(ep);
-
-            //string cmd = string.Empty;
-            //byte[] receiverBuff = new byte[8192];
-
-            //Console.WriteLine("Connected... Enter Q to exit");
-
-            //// Q 를 누를 때까지 계속 Echo 실행
-            //while ((cmd = Console.ReadLine()) != "Q")
-            //{
-            //    byte[] buff = Encoding.UTF8.GetBytes(cmd);
-
-            //    // (3) 서버에 데이타 전송
-            //    sock.Send(buff, SocketFlags.None);
-
-            //    // (4) 서버에서 데이타 수신
-            //    int n = sock.Receive(receiverBuff);
-
-            //    string data = Encoding.UTF8.GetString(receiverBuff, 0, n);
-            //    Console.WriteLine(data);
-            //}
-
-            // (5) 소켓 닫기
-
         }
-
+        
         public void Close()
         {
+            // (5) 소켓 닫기
             sock.Close();
         }
-    }
-
-    
+    }    
 }
