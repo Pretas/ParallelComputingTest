@@ -6,18 +6,19 @@ using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Tools
 {
     public class SendReceive
     {
-        public static void SendGeneric<T>(Socket clientSock, T obj)
+        public static void SendPrimitive<T>(Socket clientSock, T obj)
         {
             byte[] dataByte = SerializationUtil.SerializeToByte(obj);
             send(clientSock, dataByte);
         }
 
-        public static T ReceiveGeneric<T>(Socket clientSock)
+        public static T ReceivePrimitive<T>(Socket clientSock)
         {
             object obj = Receive(clientSock);
             if (obj != null)
@@ -27,10 +28,12 @@ namespace Tools
                 return data;
             }
             else
-            { return default(T); }
+            {
+                return default(T);
+            }
         }
 
-        public static void send(Socket clientSock, byte[] data)
+        protected static void send(Socket clientSock, byte[] data)
         {
             // 객체의 바이트수 계산, null이거나 바이트가 0이면 실데이터는 전송하지 않음
             int dl = 0;
@@ -69,7 +72,7 @@ namespace Tools
             }
         }
 
-        public static byte[] Receive(Socket clientSock)
+        protected static byte[] Receive(Socket clientSock)
         {
             // 객체의 바이트수 수신
             byte[] dlb = GetBytesFromStream(clientSock, 4);
@@ -85,7 +88,7 @@ namespace Tools
             string respondStr = Encoding.UTF8.GetString(respond);
             if (respondStr == @"@$^*)") throw new Exception(@"incorrect message length received");
 
-            int lth = BitConverter.ToInt16(dlb, 0);
+            int lth = BitConverter.ToInt32(dlb, 0);
             if (lth > 0)
             {
                 byte[] dataReceived = GetBytesFromStream(clientSock, lth);
@@ -97,12 +100,14 @@ namespace Tools
         private static byte[] GetBytesFromStream(Socket sock, int lth)
         {
             byte[] dataBytes = new byte[lth];
-            for (int i = 0; i < lth; i++)
+            int countReceived = sock.Receive(dataBytes);
+            if (countReceived < lth)
             {
-                byte[] tick = new byte[1];
-                sock.Receive(tick);
-                dataBytes[i] = tick[0];
+                int lthNested = lth - countReceived;
+                byte[] dataBytesNested = GetBytesFromStream(sock, lthNested);
+                for (int i = 0; i < lthNested; i++) dataBytes[countReceived + i] = dataBytesNested[i];
             }
+
             return dataBytes;
         }
     }
@@ -111,7 +116,7 @@ namespace Tools
     {
         public Socket sock;
         public Socket clientSock;
-        
+
         public ServerSocket(int port)
         {
             sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -122,7 +127,7 @@ namespace Tools
 
             // (3) 포트 Listening 시작
             sock.Listen(10);
-            
+
             // (4) 연결을 받아들여 새 소켓 생성 (하나의 연결만 받아들임)
             clientSock = sock.Accept();
         }
@@ -138,21 +143,38 @@ namespace Tools
     public class ClientSocket
     {
         public Socket sock;
-        
+
         public ClientSocket(string serverIP, int port)
         {
             // (1) 소켓 객체 생성 (TCP 소켓)
             sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            // (2) 서버에 연결
-            IPEndPoint ep = new IPEndPoint(IPAddress.Parse(serverIP), port);
-            sock.Connect(ep);
+            int tryCount = 20;
+            int tryCounter = 0;
+            while (tryCounter < tryCount)
+            {
+                try
+                {
+                    // (2) 서버에 연결
+                    IPEndPoint ep = new IPEndPoint(IPAddress.Parse(serverIP), port);
+                    sock.Connect(ep);
+                }
+                catch (SocketException e)
+                {
+                    Console.WriteLine(@"Client for {0}/{1} : {2}", serverIP, port.ToString(), e.Message);
+                    Thread.Sleep(10000);
+                }
+                finally
+                {
+                    tryCounter++;
+                }
+            }
         }
-        
+
         public void Close()
         {
             // (5) 소켓 닫기
             sock.Close();
         }
-    }    
+    }
 }

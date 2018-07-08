@@ -9,3 +9,9 @@ D:\Repositories\ParallelComputingPilot\Modules\obj\Debug\Modules.pdb
 D:\Programming\ParallelComputingPilot\Modules\obj\Debug\Modules.csprojResolveAssemblyReference.cache
 D:\Programming\ParallelComputingPilot\Modules\obj\Debug\Modules.dll
 D:\Programming\ParallelComputingPilot\Modules\obj\Debug\Modules.pdb
+D:\Programming\ParallelComputingPilot\Modules\bin\Debug\Modules.dll
+D:\Programming\ParallelComputingPilot\Modules\bin\Debug\Modules.pdb
+D:\Programming\ParallelComputingPilot\Modules\bin\Debug\ParallelComputingTest.dll
+D:\Programming\ParallelComputingPilot\Modules\bin\Debug\Tools.dll
+D:\Programming\ParallelComputingPilot\Modules\bin\Debug\ParallelComputingTest.pdb
+D:\Programming\ParallelComputingPilot\Modules\bin\Debug\Tools.pdb

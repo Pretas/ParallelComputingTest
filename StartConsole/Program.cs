@@ -33,16 +33,13 @@ namespace StartConsole
                         scn[j] = rn.NextDouble();
                     }
                     testData.Add(i, scn);
-                }
-
-                //serialize
-                byte[] dataByte = Tools.SerializationUtil.SerializeToByte(testData);
+                }                
                 
                 //Client Socket 생성
                 Tools.ClientSocket cs = new Tools.ClientSocket(@"192.168.10.101", 7878);
 
                 //send
-                Tools.SendReceive.send(cs.sock, dataByte);
+                Tools.SendReceive.SendPrimitive(cs.sock, testData);
 
                 Console.ReadLine();
             }
@@ -50,12 +47,9 @@ namespace StartConsole
             {
                 //ServerSocket Socket 생성
                 Tools.ServerSocket sc = new Tools.ServerSocket(7878);
-
-                //receive
-                byte[] dataByte = Tools.SendReceive.Receive(sc.clientSock);
-
+                
                 //Deserialize
-                Dictionary<int, double[]> scnSet = (Dictionary<int, double[]>)Tools.SerializationUtil.DeserializeToObject(dataByte);
+                Dictionary<int, double[]> scnSet = Tools.SendReceive.ReceivePrimitive<Dictionary<int, double[]>>(sc.clientSock);
 
                 Console.ReadLine();
             }

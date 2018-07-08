@@ -1,7 +1,4 @@
-﻿using NetComponentTest;
-using System;
-using System.Collections.Generic;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using Tools;
 
 namespace Modules
@@ -35,7 +32,7 @@ namespace Modules
         void LoadSeedFromDB(ref NetComponents nc);
         void InsertResultToDB(ref NetComponents nc);
         void SendSeed(ref NetComponents nc);
-        void ReceiveResult(ref NetComponents nc);        
+        void ReceiveResult(ref NetComponents nc);
         void ReceiveSeed(ref NetComponents nc);
         void SendResult(ref NetComponents nc);
         void AcheiveSeed(ref NetComponents nc);
@@ -46,7 +43,7 @@ namespace Modules
         void ListUpSeed(ref NetComponents nc);
         void sendInput(NetComponents nc);
         void ReceiveInput(ref NetComponents nc);
-        int GetCount(SeedIndex si);        
+        int GetCount(SeedIndex si);
         bool GetIsInProcess(NetComponents nc, Role role);
         void ProjectionInit(NetComponents nc);
         void ProjectionExecute(ref NetComponents nc);
@@ -70,16 +67,16 @@ namespace Modules
 
         public void DoHeadJob(Socket sock)
         {
-            Comm.LoadInputFromDB(ref NC);            
+            Comm.LoadInputFromDB(ref NC);
             Comm.ListUpSeed(ref NC);
-            ThreadSafeActions(CommJobName.SetIsDoneLoadingInput, Role.Head);
+            DoThreadSafeJob(CommJobName.SetIsDoneLoadingInput, Role.Head);
 
             bool isInProcess = true;
             while (isInProcess)
             {
-                ThreadSafeActions(CommJobName.LoadSeedFromDB, Role.Head);
-                ThreadSafeActions(CommJobName.InsertResultToDB, Role.Head);
-                ThreadSafeActions(CommJobName.SetIsInProcessFrom, Role.Head);
+                DoThreadSafeJob(CommJobName.LoadSeedFromDB, Role.Head);
+                DoThreadSafeJob(CommJobName.InsertResultToDB, Role.Head);
+                DoThreadSafeJob(CommJobName.SetIsInProcessFrom, Role.Head);
                 isInProcess = Comm.GetIsInProcess(NC, Role.Head);
             }
         }
@@ -93,27 +90,27 @@ namespace Modules
             while (isInProcess)
             {
                 // 씨드 요청오고 보냄
-                ThreadSafeActions(CommJobName.SendSeed, Role.Upper);
-                ThreadSafeActions(CommJobName.ReceiveResult, Role.Upper);
-                
+                DoThreadSafeJob(CommJobName.SendSeed, Role.Upper);
+                DoThreadSafeJob(CommJobName.ReceiveResult, Role.Upper);
+
                 isInProcess = Comm.GetIsInProcess(NC, Role.Upper);
-                SendReceive.SendGeneric(sock, isInProcess);
+                SendReceive.SendPrimitive(sock, isInProcess);
             }
         }
 
         public void DoLowerJob(Socket sock)
         {
             Comm.ReceiveInput(ref NC);
-            ThreadSafeActions(CommJobName.SetIsDoneLoadingInput, Role.Lower);
+            DoThreadSafeJob(CommJobName.SetIsDoneLoadingInput, Role.Lower);
 
             bool isInProcess = true;
             while (isInProcess)
             {
-                ThreadSafeActions(CommJobName.ReceiveSeed, Role.Lower);
-                ThreadSafeActions(CommJobName.SendResult, Role.Lower);
-                ThreadSafeActions(CommJobName.SetIsInProcessFrom, Role.Lower);
-                isInProcess = SendReceive.ReceiveGeneric<bool>(sock);                
-            }            
+                DoThreadSafeJob(CommJobName.ReceiveSeed, Role.Lower);
+                DoThreadSafeJob(CommJobName.SendResult, Role.Lower);
+                isInProcess = SendReceive.ReceivePrimitive<bool>(sock);
+                DoThreadSafeJob(CommJobName.SetIsInProcessFrom, Role.Lower);
+            }
         }
 
         public void DoWorkerJob(Socket sock)
@@ -125,17 +122,16 @@ namespace Modules
             while (isInProcess)
             {
                 // 씨드 요청오고 보냄
-                ThreadSafeActions(CommJobName.AcheiveSeed, Role.Worker);
+                DoThreadSafeJob(CommJobName.AcheiveSeed, Role.Worker);
                 Comm.ProjectionExecute(ref NC);
-                ThreadSafeActions(CommJobName.PutResult, Role.Worker);
-
+                DoThreadSafeJob(CommJobName.PutResult, Role.Worker);
                 isInProcess = Comm.GetIsInProcess(NC, Role.Worker);
             }
         }
 
         object Lock = new object();
 
-        public void ThreadSafeActions(CommJobName jn, Role role)
+        public void DoThreadSafeJob(CommJobName jn, Role role)
         {
             lock (Lock)
             {
@@ -155,7 +151,7 @@ namespace Modules
 
     public enum CommJobName
     {
-        SetIsDoneLoadingInput, LoadSeedFromDB, InsertResultToDB, SendSeed, ReceiveResult, ReceiveSeed, SendResult, AcheiveSeed, PutResult, SetIsInProcessFrom        
+        SetIsDoneLoadingInput, LoadSeedFromDB, InsertResultToDB, SendSeed, ReceiveResult, ReceiveSeed, SendResult, AcheiveSeed, PutResult, SetIsInProcessFrom
     }
 
     public enum Role

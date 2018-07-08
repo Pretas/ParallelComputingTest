@@ -40,10 +40,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="General.cs" />
-    <Compile Include="ProjectionSCV.cs" />
+    <Compile Include="ModuleGeneral.cs" />
+    <Compile Include="ModuleSCV.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SCVExample.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Engine\Engine.csproj">
