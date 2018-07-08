@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
+using Modules;
 
 namespace StartConsole
 {
@@ -12,6 +10,12 @@ namespace StartConsole
         static void Main(string[] args)
         {
             SendDataTest(0);                
+        }
+
+        static void TestJob()
+        {
+            
+            
         }
 
         private static void SendDataTest(int coreNo)
@@ -207,4 +211,6 @@ namespace StartConsole
             //Console.WriteLine();
         }
     }
+
+    
 }

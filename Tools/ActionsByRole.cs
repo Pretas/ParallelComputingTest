@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NetComponents
+namespace NetComponentTest
 {
     public class ActionOfHead
     {
@@ -39,7 +39,7 @@ namespace NetComponents
                     //결과를 디비에 업로드
                     if (rm.CheckNeedSumUp())
                     {
-                        Tuple<SeedIndex, Result> sumUpRes = (Tuple<SeedIndex, Result>)comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
+                        Tuple<SeedIndex, ResultContainer> sumUpRes = (Tuple<SeedIndex, ResultContainer>)comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
                         conn.InsertResultToDB(sumUpRes.Item2);
                         comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
                     }
@@ -124,7 +124,7 @@ namespace NetComponents
                     if (isResult)
                     {
                         SeedIndex si = Tools.SendReceive.ReceiveGeneric<SeedIndex>(LowerSock);
-                        Result res = Tools.SendReceive.ReceiveGeneric<Result>(LowerSock);
+                        ResultContainer res = Tools.SendReceive.ReceiveGeneric<ResultContainer>(LowerSock);
                         object resSet = Tuple.Create(ThisCoreNo, si, res);
                         comm.Communicate(CommJobName.StackResult, ref sm, ref rm, resSet);
                     }
@@ -195,7 +195,7 @@ namespace NetComponents
                     Tools.SendReceive.SendGeneric(UpperSock, isResult);
                     if (isResult)
                     {
-                        Tuple<SeedIndex, Result> sumUpRes = (Tuple<SeedIndex, Result>)comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
+                        Tuple<SeedIndex, ResultContainer> sumUpRes = (Tuple<SeedIndex, ResultContainer>)comm.Communicate(CommJobName.UploadResult, ref sm, ref rm, null);
                         Tools.SendReceive.SendGeneric(UpperSock, sumUpRes.Item1);
                         Tools.SendReceive.SendGeneric(UpperSock, sumUpRes.Item2);
                     }
@@ -250,7 +250,7 @@ namespace NetComponents
                 while (true)
                 {
                     SeedIndex siList = (SeedIndex)comm.Communicate(CommJobName.AllocateSeed, ref sm, ref rm, Tuple.Create(ThisCoreNo, JobUnitNo));
-                    Result res = projector.Execute();
+                    ResultContainer res = projector.Execute();
                     comm.Communicate(CommJobName.StackResult, ref sm, ref rm, Tuple.Create(ThisCoreNo, siList, res));
                     if (!sm.GetIsMoreSeedFromUpperLayer() && sm.IsEmpty()) break;
                 }

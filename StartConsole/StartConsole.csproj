@@ -54,6 +54,10 @@
       <Project>{04102ea2-8d94-4353-89fe-c4074efec5c9}</Project>
       <Name>Engine</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Modules\Modules.csproj">
+      <Project>{8bf9a5c9-c75a-41d0-90b3-75887bc9d392}</Project>
+      <Name>Modules</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tools\Tools.csproj">
       <Project>{5ce3cb04-e86c-4afa-8680-e8a8b0695846}</Project>
       <Name>Tools</Name>

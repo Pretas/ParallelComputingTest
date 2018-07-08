@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NetComponents
+namespace NetComponentTest
 {
     public abstract class NetComponentFamily
     {
@@ -34,7 +34,7 @@ namespace NetComponents
         // 필요한 만큼 시드 가져오기(SeedContainer에 없는 부분만 추려서 가져오기), current에 반영
         public abstract void LoadSeed(ref SeedManager sm, int unit);
         // 산출결과를 디비에 입력
-        public abstract void InsertResultToDB(Result result);
+        public abstract void InsertResultToDB(ResultContainer result);
         // 모든 시드가 로딩 되었으면 true
         public abstract void SetIsFinished(bool yn);
         // 모든 시드가 로딩 되었는지 가져옴
@@ -52,7 +52,6 @@ namespace NetComponents
         public abstract void SetCompleteLoading();
     }
 
-    abstract public class InputContainer { }
 
 
     public abstract class SeedManager
@@ -83,29 +82,24 @@ namespace NetComponents
         public abstract int GetSeedCountNotAllocated();
     }
 
-    abstract public class SeedContainer { }
-
-    abstract public class SeedIndex { }
-
     abstract public class SeedIndexCompart { }
-
+    
     public interface IResultManager
     {
         // 런이 끝난 결과를 쌓기
-        void StackResult(SeedIndex resIndex, Result resReal);
+        void StackResult(SeedIndex resIndex, ResultContainer resReal);
         // 런결과가 많이 쌓여서 집계를 할지 말지 체크 
         bool CheckNeedSumUp();
         // 집계되어 위층으로 보낸 후 비우기
         void ClearResult();
         // 집계함수
-        void SumUp(out SeedIndex si, out Result res);
+        void SumUp(out SeedIndex si, out ResultContainer res);
         // 집계한 후 위로 보내기
         void UploadResult();
         // 쌓여있는 결과가 없으면
         bool GetIsEmpty();
     }
 
-    public abstract class Result { }
 
     public class ExceptionManager
     {
@@ -120,13 +114,13 @@ namespace NetComponents
         // 인풋, 런함수 세팅
         void Init(InputContainer ic, Func<InputContainer, SeedContainer, ProjectionData> funcRun);
         // 런 실행
-        Result Execute();
+        ResultContainer Execute();
         // 단건씩 런 실행 후 결과 집계
-        void SumUp(ProjectionData pjd, ref Result baseResult);
+        void SumUp(ProjectionData pjd, ref ResultContainer baseResult);
     }
 
     public abstract class ProjectionData { }
-
+    
     public enum CommJobName
     { InsertSeed, AllocateSeed, ReturnBackSeed, StackResult, UploadResult }
 
@@ -176,10 +170,10 @@ namespace NetComponents
                 }
                 else if (jn == CommJobName.StackResult)
                 {
-                    Tuple<int, SeedIndex, Result> input2 = (Tuple<int, SeedIndex, Result>)input;
+                    Tuple<int, SeedIndex, ResultContainer> input2 = (Tuple<int, SeedIndex, ResultContainer>)input;
                     int coreNo = input2.Item1;
                     SeedIndex resIndex = input2.Item2;
-                    Result resReal = input2.Item3;
+                    ResultContainer resReal = input2.Item3;
 
                     rm.StackResult(resIndex, resReal);
                     sm.RemoveAllocatedSeed(coreNo, resIndex);
@@ -188,7 +182,7 @@ namespace NetComponents
                 else if (jn == CommJobName.UploadResult)
                 {
                     SeedIndex si;
-                    Result sumUpRes;
+                    ResultContainer sumUpRes;
                     rm.SumUp(out si, out sumUpRes);
                     rm.ClearResult();
                     res = Tuple.Create(si, sumUpRes);
