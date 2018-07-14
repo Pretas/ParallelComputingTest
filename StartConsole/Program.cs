@@ -9,13 +9,20 @@ namespace StartConsole
     {
         static void Main(string[] args)
         {
-            SendDataTest(0);                
+            //SendDataTest(0);
+            //Tools.PartitionTools2.Party();
+            Tools.PartitionTools2.SetCorePartition();
+        }
+                
+        static void PartyTest2()
+        {
+            int[,] p = new int[2, 14];
+            Tools.PartitionTools2.SetNodePartitionByGroup(1, 0, p.GetLength(1), 3, ref p);
+            Console.Write("end");
         }
 
         static void TestJob()
-        {
-            
-            
+        {   
         }
 
         private static void SendDataTest(int coreNo)
