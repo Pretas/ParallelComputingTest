@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Net.Sockets;
 using Tools;
 
 namespace Modules
@@ -19,144 +20,183 @@ namespace Modules
         public SeedIndex SiBef;
         public SeedIndex SiAllo;
         public SeedIndex SiAft;
-        public ResultContainer RCon;
-        public bool IsDoneLoadingInput = false;
-        public bool IsInProcessFrom = true;
+        public ResultContainer RCon;        
         public Projector Pj;
+        int UnitSeed;
     }
 
     public interface ICommActions
     {
-        // ********** Thread Safe Actions  
-        void SetIsDoneLoadingInput(ref NetComponents nC, Role role);
-        void LoadSeedFromDB(ref NetComponents nc);
-        void InsertResultToDB(ref NetComponents nc);
-        void SendSeed(ref NetComponents nc);
-        void ReceiveResult(ref NetComponents nc);
-        void ReceiveSeed(ref NetComponents nc);
-        void SendResult(ref NetComponents nc);
-        void AcheiveSeed(ref NetComponents nc);
-        void PutResult(ref NetComponents nc);
-        void SetIsInProcessFrom(ref NetComponents nC, Role role);
-
-        // ********** Other Actions
-        void ListUpSeed(ref NetComponents nc);
-        void sendInput(NetComponents nc);
-        void ReceiveInput(ref NetComponents nc);
-        int GetCount(SeedIndex si);
-        bool GetIsInProcess(NetComponents nc, Role role);
-        void ProjectionInit(NetComponents nc);
-        void ProjectionExecute(ref NetComponents nc);
-        void LoadInputFromDB(ref NetComponents nc);
+        int GetCount(SeedIndex siAft);        
     }
 
     public class NetModule
     {
-        public NetComponents NC = new NetComponents();
         public ICommActions Comm;
-        public int UnitSeed;
-        public int LayerNo;
+        public NetComponents NetC = new NetComponents();
+        
+        public bool IsDoneLoadingInput = false;
+        public bool HasSeedFrom = true;
 
-        public NetModule(NetComponents nc, ICommActions comm, int us, int ln)
+        public int UnitSeedBase;
+        public int LayerCount;
+        public int LayerNo;
+        public int ConnCount;
+
+        private readonly object LockObj = new object();
+
+        public NetModule(NetComponents nc, ICommActions comm, int unitSeedBase, int layerCnt, int layerNo, int connCnt)
         {
+            NetC = nc;
             Comm = comm;
-            NC = nc;
-            UnitSeed = us;
-            LayerNo = ln;
+            UnitSeedBase = unitSeedBase;
+            LayerCount = layerCnt;
+            LayerNo = layerNo;
+            ConnCount = connCnt;
         }
 
         public void DoHeadJob(Socket sock)
         {
-            Comm.LoadInputFromDB(ref NC);
-            Comm.ListUpSeed(ref NC);
-            DoThreadSafeJob(CommJobName.SetIsDoneLoadingInput, Role.Head);
+            int unitSeed = UnitSeedBase * Convert.ToInt32(Math.Pow(Convert.ToDouble(ConnCount), Convert.ToDouble(LayerCount) - Convert.ToDouble(LayerNo) - 1));
 
-            bool isInProcess = true;
-            while (isInProcess)
+            Comm.LoadInputFromDB(ref NetC);
+            Comm.ListUpSeed(ref NetC);
+            lock (LockObj) IsDoneLoadingInput = true;
+
+            while (Comm.GetCount(NetC.SiTotal) > 0 ||
+                Comm.GetCount(NetC.SiBef) > 0 ||
+                Comm.GetCount(NetC.SiAllo) > 0 ||
+                Comm.GetCount(NetC.SiAft) > 0)
             {
-                DoThreadSafeJob(CommJobName.LoadSeedFromDB, Role.Head);
-                DoThreadSafeJob(CommJobName.InsertResultToDB, Role.Head);
-                DoThreadSafeJob(CommJobName.SetIsInProcessFrom, Role.Head);
-                isInProcess = Comm.GetIsInProcess(NC, Role.Head);
+                if (Comm.GetCount(NetC.SiBef) < unitSeed || Comm.GetCount(NetC.SiTotal) > 0)
+                {
+                    SeedIndex siTemp = default(SeedIndex);
+                    SeedContainer sConTemp = default(SeedContainer);
+                    Comm.LoadSeedFromDB(NetC, ref siTemp, ref sConTemp);
+                    lock (LockObj) Comm.PutSeed(siTemp, sConTemp, ref NetC);
+                }
+
+                if (Comm.GetCount(NetC.SiAft) >= UnitSeed ||
+                    (Comm.GetCount(NetC.SiTotal) == 0 && Comm.GetCount(NetC.SiAft) > 0))
+                {
+                    SeedIndex siTemp = default(SeedIndex);
+                    ResultContainer rConTemp = default(ResultContainer);
+                    lock (LockObj) Comm.PullResult(ref NetC, ref siTemp, ref rConTemp);
+                    ResultContainer rConMerged = default(ResultContainer);
+                    Comm.MergeResult(rConTemp, ref rConMerged);
+                    Comm.InsertResultToDB(siTemp, rConMerged);
+                }
+
+                NetC.HasSeedFrom = Comm.GetCount(NetC.SiTotal) > 0;
             }
         }
 
         public void DoUpperJob(Socket sock)
         {
-            while (!NC.IsDoneLoadingInput) { }
-            Comm.sendInput(NC);
+            while (!NetC.IsDoneLoadingInput) { }
+            Comm.SendInput(NetC);
 
-            bool isInProcess = true;
-            while (isInProcess)
+            bool hasSeedTo = true;
+            bool hasResultFrom = true;
+
+            while (hasSeedTo || hasResultFrom)
             {
-                // 씨드 요청오고 보냄
-                DoThreadSafeJob(CommJobName.SendSeed, Role.Upper);
-                DoThreadSafeJob(CommJobName.ReceiveResult, Role.Upper);
+                bool ynSeed = SendReceive.ReceivePrimitive<bool>(sock);
+                if (ynSeed)
+                {
+                    SeedIndex siTemp = default(SeedIndex);
+                    SeedContainer sConTemp = default(SeedContainer);
+                    lock (LockObj) Comm.PullSeed(ref NetC, ref siTemp, ref sConTemp);
 
-                isInProcess = Comm.GetIsInProcess(NC, Role.Upper);
-                SendReceive.SendPrimitive(sock, isInProcess);
+                    bool ynSeed2 = Comm.GetCount(siTemp) > 0;
+                    SendReceive.SendPrimitive(sock, ynSeed2);
+                    if (ynSeed2)
+                    {
+                        Comm.SendSeed(ref siTemp, ref sConTemp);
+                    }
+                }
+
+                bool ynResult = SendReceive.ReceivePrimitive<bool>(sock);
+                if (ynResult)
+                {
+                    SeedIndex siTemp = default(SeedIndex);
+                    ResultContainer rConTemp = default(ResultContainer);
+                    Comm.ReceiveResult(ref siTemp, ref rConTemp);
+                    lock (LockObj) Comm.PutResult(siTemp, rConTemp, ref NetC);
+                }
+
+                hasSeedTo = (NetC.HasSeedFrom || Comm.GetCount(NetC.SiBef) > 0);
+                SendReceive.SendPrimitive(sock, hasSeedTo);
+                hasResultFrom = SendReceive.ReceivePrimitive<bool>(sock);
             }
         }
 
         public void DoLowerJob(Socket sock)
         {
-            Comm.ReceiveInput(ref NC);
-            DoThreadSafeJob(CommJobName.SetIsDoneLoadingInput, Role.Lower);
+            Comm.ReceiveInput(ref NetC);
+            lock (LockObj) NetC.IsDoneLoadingInput = true;
 
-            bool isInProcess = true;
-            while (isInProcess)
+            bool hasResultTo = true;
+
+            while (NetC.HasSeedFrom || hasResultTo)
             {
-                DoThreadSafeJob(CommJobName.ReceiveSeed, Role.Lower);
-                DoThreadSafeJob(CommJobName.SendResult, Role.Lower);
-                isInProcess = SendReceive.ReceivePrimitive<bool>(sock);
-                DoThreadSafeJob(CommJobName.SetIsInProcessFrom, Role.Lower);
+                bool ynSeed = UnitSeed - Comm.GetCount(NetC.SiBef) > 0;
+                SendReceive.SendPrimitive(sock, ynSeed);
+
+                if (ynSeed)
+                {
+                    bool ynSeed2 = SendReceive.ReceivePrimitive<bool>(sock);
+
+                    if (ynSeed2)
+                    {
+                        SeedIndex siTemp = default(SeedIndex);
+                        SeedContainer sConTemp = default(SeedContainer);
+                        Comm.ReceiveSeed(ref siTemp, ref sConTemp);
+                        lock (LockObj) Comm.PutSeed(siTemp, sConTemp, ref NetC);
+                    }
+                }
+
+                bool ynResult = Comm.GetCount(NetC.SiAft) > UnitSeed ||
+                    (!NetC.HasSeedFrom && Comm.GetCount(NetC.SiAft) > 0);
+                SendReceive.SendPrimitive(sock, ynResult);
+
+                if (ynResult)
+                {
+                    SeedIndex siTemp = default(SeedIndex);
+                    ResultContainer rConTemp = default(ResultContainer);
+                    lock (LockObj) Comm.PullResult(ref NetC, ref siTemp, ref rConTemp);
+                    ResultContainer rConMerged = default(ResultContainer);
+                    Comm.MergeResult(rConTemp, ref rConMerged);
+                    Comm.SendResult(siTemp, rConMerged);
+                }
+
+                lock (LockObj) NetC.HasSeedFrom = SendReceive.ReceivePrimitive<bool>(sock);
+                hasResultTo = Comm.GetCount(NetC.SiBef) > 0 ||
+                    Comm.GetCount(NetC.SiAllo) > 0 ||
+                    Comm.GetCount(NetC.SiAft) > 0;
+                SendReceive.SendPrimitive(sock, hasResultTo);
             }
         }
 
         public void DoWorkerJob(Socket sock)
         {
-            while (!NC.IsDoneLoadingInput) { }
+            while (!NetC.IsDoneLoadingInput) { }
 
-            Comm.ProjectionInit(NC);
-            bool isInProcess = true;
-            while (isInProcess)
+            Comm.InitProjector(ref NetC);
+            
+            while (NetC.HasSeedFrom)
             {
-                // 씨드 요청오고 보냄
-                DoThreadSafeJob(CommJobName.AcheiveSeed, Role.Worker);
-                Comm.ProjectionExecute(ref NC);
-                DoThreadSafeJob(CommJobName.PutResult, Role.Worker);
-                isInProcess = Comm.GetIsInProcess(NC, Role.Worker);
-            }
-        }
+                if(Comm.GetCount(NetC.SiBef)>0)
+                {
+                    SeedIndex siTemp = default(SeedIndex);
+                    SeedContainer sConTemp = default(SeedContainer);
+                    lock (LockObj) Comm.PullSeed(ref NetC, ref siTemp, ref sConTemp);
 
-        object Lock = new object();
-
-        public void DoThreadSafeJob(CommJobName jn, Role role)
-        {
-            lock (Lock)
-            {
-                if (jn == CommJobName.SetIsDoneLoadingInput) Comm.SetIsDoneLoadingInput(ref NC, role);
-                else if (jn == CommJobName.LoadSeedFromDB) Comm.LoadSeedFromDB(ref NC);
-                else if (jn == CommJobName.InsertResultToDB) Comm.InsertResultToDB(ref NC);
-                else if (jn == CommJobName.SendSeed) Comm.SendSeed(ref NC);
-                else if (jn == CommJobName.ReceiveResult) Comm.ReceiveResult(ref NC);
-                else if (jn == CommJobName.ReceiveSeed) Comm.ReceiveSeed(ref NC);
-                else if (jn == CommJobName.SendResult) Comm.SendResult(ref NC);
-                else if (jn == CommJobName.AcheiveSeed) Comm.AcheiveSeed(ref NC);
-                else if (jn == CommJobName.PutResult) Comm.PutResult(ref NC);
-                else if (jn == CommJobName.SetIsInProcessFrom) Comm.SetIsInProcessFrom(ref NC, role);
+                    ResultContainer rConTemp = default(ResultContainer);
+                    Comm.Run(NetC, sConTemp, ref rConTemp);
+                    lock (LockObj) Comm.PutResult(siTemp, rConTemp, ref NetC);
+                } 
             }
         }
     }
-
-    public enum CommJobName
-    {
-        SetIsDoneLoadingInput, LoadSeedFromDB, InsertResultToDB, SendSeed, ReceiveResult, ReceiveSeed, SendResult, AcheiveSeed, PutResult, SetIsInProcessFrom
-    }
-
-    public enum Role
-    {
-        Head, Upper, Lower, Worker
-    }
-
 }
