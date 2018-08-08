@@ -11,9 +11,32 @@ namespace StartConsole
         {
             //SendDataTest(0);
             //Tools.PartitionTools2.Party();
-            Tools.PartitionTools2.SetCorePartition();
+            //Tools.PartitionTools2.SetCorePartition();
+            PartyTest3();
         }
-                
+
+        static void PartyTest3()
+        {
+            List<Tools.NodeInfo> lst = new List<Tools.NodeInfo>();
+            for (int i = 0; i < 378; i++)
+            {
+                var temp = new Tools.NodeInfo();
+                temp.Addr = new int[5];
+                lst.Add(temp);
+            }
+            List<Tools.NodeInfo> np = Tools.PartitionTools3.DoNodePartition(5, 0, 7, 0, lst);
+            //List<List<Tools.NodeInfo>> nLst = Tools.PartitionTools3.GetDiv(lst, 7);        
+
+            int cnter = 1;
+            foreach (var item in np)
+            {
+                Console.WriteLine("{0}\t: {1}\t{2}\t{3}\t{4}\t{5}", cnter, item.Addr[0], item.Addr[1], item.Addr[2], item.Addr[3], item.Addr[4]);
+                cnter++;
+            }
+            
+            Console.Write("end");
+        }
+
         static void PartyTest2()
         {
             int[,] p = new int[2, 14];

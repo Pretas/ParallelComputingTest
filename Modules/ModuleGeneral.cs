@@ -23,11 +23,31 @@ namespace Modules
         public ResultContainer RCon;        
         public Projector Pj;
         int UnitSeed;
+
+        public bool HasSeedFrom { get; internal set; }
+        public bool IsDoneLoadingInput { get; internal set; }
     }
 
     public interface ICommActions
     {
-        int GetCount(SeedIndex siAft);        
+        int GetCount(SeedIndex siAft);
+        void LoadInputFromDB(ref NetComponents netC);
+        void ListUpSeed(ref NetComponents netC);
+        void LoadSeedFromDB(NetComponents netC, ref SeedIndex siTemp, ref SeedContainer sConTemp);
+        void PutSeed(SeedIndex siTemp, SeedContainer sConTemp, ref NetComponents netC);
+        void PullResult(ref NetComponents netC, ref SeedIndex siTemp, ref ResultContainer rConTemp);
+        void MergeResult(ResultContainer rConTemp, ref ResultContainer rConMerged);
+        void InsertResultToDB(SeedIndex siTemp, ResultContainer rConMerged);
+        void SendInput(NetComponents netC);
+        void ReceiveResult(ref SeedIndex siTemp, ref ResultContainer rConTemp);
+        void PutResult(SeedIndex siTemp, ResultContainer rConTemp, ref NetComponents netC);
+        void ReceiveInput(ref NetComponents netC);
+        void ReceiveSeed(ref SeedIndex siTemp, ref SeedContainer sConTemp);
+        void SendResult(SeedIndex siTemp, ResultContainer rConMerged);
+        void PullSeed(ref NetComponents netC, ref SeedIndex siTemp, ref SeedContainer sConTemp);
+        void SendSeed(ref SeedIndex siTemp, ref SeedContainer sConTemp);
+        void InitProjector(ref NetComponents netC);
+        void Run(NetComponents netC, SeedContainer sConTemp, ref ResultContainer rConTemp);
     }
 
     public class NetModule
@@ -44,6 +64,8 @@ namespace Modules
         public int ConnCount;
 
         private readonly object LockObj = new object();
+
+        public int UnitSeed { get; private set; }
 
         public NetModule(NetComponents nc, ICommActions comm, int unitSeedBase, int layerCnt, int layerNo, int connCnt)
         {

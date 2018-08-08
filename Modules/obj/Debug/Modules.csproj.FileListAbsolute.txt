@@ -15,3 +15,13 @@ D:\Programming\ParallelComputingPilot\Modules\bin\Debug\ParallelComputingTest.dl
 D:\Programming\ParallelComputingPilot\Modules\bin\Debug\Tools.dll
 D:\Programming\ParallelComputingPilot\Modules\bin\Debug\ParallelComputingTest.pdb
 D:\Programming\ParallelComputingPilot\Modules\bin\Debug\Tools.pdb
+D:\Repositories\ParallelComputingTest\Modules\obj\Debug\Modules.csprojResolveAssemblyReference.cache
+D:\Repositories\ParallelComputingTest\Modules\obj\Debug\Modules.csproj.CoreCompileInputs.cache
+D:\Repositories\ParallelComputingTest\Modules\obj\Debug\Modules.dll
+D:\Repositories\ParallelComputingTest\Modules\obj\Debug\Modules.pdb
+D:\Repositories\ParallelComputingTest\Modules\bin\Debug\Modules.dll
+D:\Repositories\ParallelComputingTest\Modules\bin\Debug\Modules.pdb
+D:\Repositories\ParallelComputingTest\Modules\bin\Debug\ParallelComputingTest.dll
+D:\Repositories\ParallelComputingTest\Modules\bin\Debug\Tools.dll
+D:\Repositories\ParallelComputingTest\Modules\bin\Debug\ParallelComputingTest.pdb
+D:\Repositories\ParallelComputingTest\Modules\bin\Debug\Tools.pdb

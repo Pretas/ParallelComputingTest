@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Partition.cs" />
     <Compile Include="Partition2.cs" />
+    <Compile Include="Partition3.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SerializeUtil.cs" />
     <Compile Include="TcpIp.cs" />
