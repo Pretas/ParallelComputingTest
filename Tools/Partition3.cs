@@ -56,12 +56,97 @@ namespace Tools
 
             return newList;            
         }
+
+        public static List<CoreInfo> DoCorePartition(int layerCnt, int layerNo, ref List<NodeInfo> nodeList, List<CoreInfo> listOrg)
+        {
+            // 첫번째 층(layerNo==0)일 경우 Addr에 0 넣기
+            if (layerNo == 0) for (int i = 0; i < listOrg.Count; i++) listOrg[i].Addr[0] = 0;
+          
+            // 아래층의 Addr 적기
+            List<CoreInfo> listOrgOrdered = listOrg.OrderBy(x => x.IP).ToList();
+
+            int cnt = listOrgOrdered.Count();
+            string ipBef = "";
+            int addr = 0;
+            for (int i = 0; i < cnt; i++)
+            {
+                if (ipBef != listOrgOrdered[i].IP)
+                {
+                    NodeInfo oneNode = nodeList.Where(x => x.IP == listOrgOrdered[i].IP).First();                               
+                    addr = oneNode.Addr[layerNo + 1];
+                    ipBef = oneNode.IP;
+                }
+
+                listOrgOrdered[i].Addr[layerNo + 1] = addr;
+            }
+
+            // 아래층의 코어파티션 수행
+            //   아래층 그루핑하기
+            List<IGrouping<int, CoreInfo>> div0 = listOrgOrdered.GroupBy(x => x.Addr[layerNo + 1]).ToList();
+            List<List<CoreInfo>> div = new List<List<CoreInfo>>();
+            foreach (var item in div0) div.Add(item.ToList());
+
+            //   아래층 파티션 수행, listNew에 저장
+            List<CoreInfo> listNew = new List<CoreInfo>();
+            int groupCnt = div.Count;
+            for (int i = 0; i < groupCnt; i++)
+            {
+                if (layerNo <= layerCnt - 3)
+                {
+                    List<CoreInfo> temp = DoCorePartition(layerCnt, layerNo + 1, ref nodeList, div[i]);
+                    listNew.AddRange(temp);
+                }
+                else
+                {
+                    int coreCnt = div[i].Count;
+                    int counter = 0;
+                    for (int j = 0; j < coreCnt; j++)
+                    {
+                        div[i][j].Addr[layerNo + 1] = counter;
+                        div[i][j].layerNo = layerCnt - 1;
+                        listNew.Add(div[i][j]);
+                        counter++;
+                    }
+                }
+            }
+
+            // server, layerNo 정하기
+            //   서버가 될 노드 선정
+            List<string> ipsThisGroup = listNew.Select(x=>x.IP).Distinct().ToList();
+            NodeInfo nodeWillBeServer = nodeList.Where(x => ipsThisGroup.Contains(x.IP)).Where(x => x.IsServer == false).First();
+
+            //   노드인포 업데이트
+            if (layerNo <= layerCnt-3) nodeWillBeServer.IsServer = true;
+            nodeList.RemoveAll(x => x.IP == nodeWillBeServer.IP);
+            nodeList.Add(nodeWillBeServer);
+
+            //   서버가 될 코어 선정
+            CoreInfo coreWillBeServer = listNew.Where(x => x.IP == nodeWillBeServer.IP && x.layerNo == layerCnt - 1).First();
+            for (int i = layerNo + 1; i < layerCnt; i++) coreWillBeServer.Addr[i] = -1;
+
+            //   코어인포 업데이트
+            coreWillBeServer.layerNo = layerNo;
+            listNew.RemoveAll(x => x.HpcName == coreWillBeServer.HpcName && x.rankNo == coreWillBeServer.rankNo);
+            listNew.Add(coreWillBeServer);
+
+            return listNew;
+        }        
     }
 
     public class NodeInfo
     {
+        public string HpcName;
         public string IP;
         public bool IsServer;
+        public int[] Addr;
+    }
+
+    public class CoreInfo
+    {
+        public string HpcName;
+        public int rankNo;
+        public string IP;
+        public int layerNo;
         public int[] Addr;
     }
 }

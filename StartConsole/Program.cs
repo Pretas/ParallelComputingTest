@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Data;
 using Modules;
+using System.Linq;
 
 namespace StartConsole
 {
@@ -17,14 +19,26 @@ namespace StartConsole
 
         static void PartyTest3()
         {
+            int nodeCnt = 378;
+            int layerNo = 5;
+            int connCnt = 7;
+            int coreCntByNode = 36;
+            int coreCnt = 378 * coreCntByNode;
+
             List<Tools.NodeInfo> lst = new List<Tools.NodeInfo>();
-            for (int i = 0; i < 378; i++)
+            for (int i = 0; i < nodeCnt; i++)
             {
-                var temp = new Tools.NodeInfo();
-                temp.Addr = new int[5];
+                var temp = new Tools.NodeInfo
+                {
+                    HpcName = "HPC0",
+                    Addr = new int[layerNo],
+                    IP = @"IP" + i.ToString(),
+                    IsServer = false
+                };
+
                 lst.Add(temp);
             }
-            List<Tools.NodeInfo> np = Tools.PartitionTools3.DoNodePartition(5, 0, 7, 0, lst);
+            List<Tools.NodeInfo> np = Tools.PartitionTools3.DoNodePartition(layerNo, 0, connCnt, 0, lst);
             //List<List<Tools.NodeInfo>> nLst = Tools.PartitionTools3.GetDiv(lst, 7);        
 
             int cnter = 1;
@@ -33,7 +47,40 @@ namespace StartConsole
                 Console.WriteLine("{0}\t: {1}\t{2}\t{3}\t{4}\t{5}", cnter, item.Addr[0], item.Addr[1], item.Addr[2], item.Addr[3], item.Addr[4]);
                 cnter++;
             }
-            
+
+            Console.WriteLine("end");
+            Console.WriteLine();
+
+            List<Tools.CoreInfo> cores = new List<Tools.CoreInfo>();
+            for (int i = 0; i < np.Count; i++)
+            {
+                for (int j = 0; j < coreCntByNode; j++)
+                {
+                    Tools.CoreInfo c = new Tools.CoreInfo
+                    {
+                        HpcName = np[i].HpcName,
+                        rankNo = i*coreCntByNode + j,
+                        IP = np[i].IP,
+                        Addr = new int[layerNo]
+                    };
+                    cores.Add(c);
+                }
+            }
+
+            List<Tools.CoreInfo> coresAft = Tools.PartitionTools3.DoCorePartition(5, 0, ref np, cores);
+
+            var selected0 = coresAft.Where(x => x.Addr[1] == 4 && x.Addr[2] == 5 && x.Addr[3] == 2);
+
+            var selected = selected0.Where(x => x.layerNo == 4);
+
+            cnter = 0;
+            foreach (var item in selected)
+            {
+                Console.WriteLine("{0},{6}\t: {1}\t{2}\t{3}\t{4}\t{5}", item.rankNo, item.Addr[0], item.Addr[1], item.Addr[2], item.Addr[3], item.Addr[4], item.IP);
+                    cnter++;
+            }
+
+            Console.WriteLine();
             Console.Write("end");
         }
 
