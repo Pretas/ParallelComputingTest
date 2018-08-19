@@ -12,39 +12,39 @@ namespace StartConsole
     {
         static void Main(string[] args)
         {
-            int lth = 0;
-            byte[] t1 = BitConverter.GetBytes(0);
-
-            byte[] t2 = Encoding.UTF8.GetBytes(@"!#%&(");
-
-            SendDataTest(0);
+            //SendDataTest(0);
             //Tools.PartitionTools2.Party();
             //Tools.PartitionTools2.SetCorePartition();
             PartyTest3();
         }
 
-        static void PartyTest3()
+        // connCnt 정하기
+        public static int GetConnCnt(int layerCnt, int nodeCnt)
         {
-            int nodeCnt = 367;
-            int layerCnt = 5;   // 정하는것
-            int connCnt;        // 계산되는것
+            int connCnt = 0;
 
-            // connCnt 정하기
             if (layerCnt == 2)
             { connCnt = nodeCnt; }
             else
-            { 
+            {
                 double a1 = Math.Log(Convert.ToDouble(nodeCnt));
                 double a2 = layerCnt - 2;
                 double a3 = Math.Exp(a1 / a2);
-                connCnt = Convert.ToInt32(a3); 
-            }       
+                connCnt = Convert.ToInt32(a3);
+            }
 
-            int coreCntByNode = 5;
-            int coreCnt = nodeCnt * coreCntByNode;
+            return connCnt;
+        }
+
+        static void PartyTest3()
+        {
+            int nodeCnt = 100;
+            int coreCntByNode = 20;
+            int layerCnt = 4;   // 정하는것
+            int connCnt = GetConnCnt(layerCnt, nodeCnt); // 계산되는것
 
             // 노드 세팅
-            List<Tools.NodeInfo> lst = new List<Tools.NodeInfo>();
+            List<Tools.NodeInfo> nodesBef = new List<Tools.NodeInfo>();
             for (int i = 0; i < nodeCnt; i++)
             {
                 var temp = new Tools.NodeInfo
@@ -55,39 +55,35 @@ namespace StartConsole
                     IsServer = false
                 };
 
-                lst.Add(temp);
+                nodesBef.Add(temp);
             }
 
             // 노드 파티션
-            List<Tools.NodeInfo> np = Tools.PartitionTools3.DoNodePartition(layerCnt, 0, connCnt, 0, lst);
+            List<Tools.NodeInfo> nodes = Tools.PartitionTools3.DoNodePartition(layerCnt, 0, connCnt, 0, nodesBef);
 
             // 코어 세팅
-            List<Tools.CoreInfo> cores = new List<Tools.CoreInfo>();
-            for (int i = 0; i < np.Count; i++)
+            List<Tools.CoreInfo> coresBef = new List<Tools.CoreInfo>();
+            for (int i = 0; i < nodes.Count; i++)
             {
                 for (int j = 0; j < coreCntByNode; j++)
                 {
                     Tools.CoreInfo c = new Tools.CoreInfo
                     {
-                        HpcName = np[i].HpcName,
-                        rankNo = i*coreCntByNode + j,
-                        IP = np[i].IP,
+                        HpcName = nodes[i].HpcName,
+                        rankNo = i * coreCntByNode + j,
+                        IP = nodes[i].IP,
                         Addr = new int[layerCnt]
                     };
-                    cores.Add(c);
+                    coresBef.Add(c);
                 }
             }
 
             // 코어 파티션
-            List<Tools.CoreInfo> coresAft = Tools.PartitionTools3.DoCorePartition(layerCnt, 0, ref np, cores);
-
-            // 노드 오름차순 배치
-            List<Tools.NodeInfo> nodesOrdered = np;
-            for (int i = layerCnt - 1; i >= 0; i--) nodesOrdered = nodesOrdered.OrderBy(x => x.Addr[i]).ToList();
-
+            List<Tools.CoreInfo> cores = Tools.PartitionTools3.DoCorePartition(layerCnt, 0, ref nodes, coresBef);
+            
             // 노드 출력
             int cnter = 1;
-            foreach (var item in nodesOrdered)
+            foreach (var item in nodes)
             {
                 Console.Write("{0},{1}   \t:", cnter, item.IP);
                 for (int i = 0; i < layerCnt; i++) Console.Write("\t{0}", item.Addr[i]);
@@ -98,13 +94,9 @@ namespace StartConsole
 
             Console.WriteLine("end");
             Console.WriteLine();
-
-            // 코어 오름차순 배치
-            List<Tools.CoreInfo> coresOrdered = coresAft;
-            for (int i = layerCnt-1; i >= 0; i--) coresOrdered = coresOrdered.OrderBy(x => x.Addr[i]).ToList();
-
+            
             // 출력하고픈 것만 추림
-            var selected = coresOrdered.Where(x => x.Addr[4] != -1);
+            var selected = cores.Where(x => x.layerNo <= 2);
 
             // 코어 출력
             cnter = 0;

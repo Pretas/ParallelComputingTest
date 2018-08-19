@@ -41,7 +41,11 @@ namespace Tools
                     counter++;
                 }
 
-                return newList;
+                // 노드 오름차순 배치
+                List<NodeInfo> nodesOrdered = newList;
+                for (int i = layerCnt - 1; i >= 0; i--) nodesOrdered = nodesOrdered.OrderBy(x => x.Addr[i]).ToList();
+
+                return nodesOrdered;
             }
             else
             {
@@ -139,7 +143,35 @@ namespace Tools
             listNew.RemoveAll(x => x.HpcName == coreWillBeServer.HpcName && x.rankNo == coreWillBeServer.rankNo);
             listNew.Add(coreWillBeServer);
 
-            return listNew;
+            // 최종 리턴할 코어리스트 정리 : 마지막층의 인덱스 정리(0부터 시작하도록)
+            List<CoreInfo> coresOrdered = new List<CoreInfo>();
+            if (layerNo == 0)
+            {
+                // 오름차순으로 재배열
+                coresOrdered = listNew;
+                for (int i = layerCnt - 1; i >= 0; i--) coresOrdered = coresOrdered.OrderBy(x => x.Addr[i]).ToList();
+
+                // 마지막층의 인덱스 정리
+                int secondLowestLayerIndexBef = -1;
+                int addrNew = 0;
+                for (int i = 0; i < coresOrdered.Count; i++)
+                {
+                    if (coresOrdered[i].Addr[layerCnt - 1] != -1)
+                    {
+                        if (coresOrdered[i].Addr[layerCnt - 2] != secondLowestLayerIndexBef)
+                        {
+                            secondLowestLayerIndexBef = coresOrdered[i].Addr[layerCnt - 2];
+                            addrNew = 0;
+                        }
+
+                        coresOrdered[i].Addr[layerCnt - 1] = addrNew;
+                        addrNew++;
+                    }                    
+                }
+            }
+            else coresOrdered = listNew;
+
+            return coresOrdered;
         }
 
         public static List<CoreInfo> DoCorePartitionOld(int layerCnt, int layerNo, ref List<NodeInfo> nodeList, List<CoreInfo> listOrg)
