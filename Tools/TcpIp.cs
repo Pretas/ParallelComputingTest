@@ -12,25 +12,10 @@ namespace Tools
 {
     public class SendReceive
     {
-        public static void SendPrimitive<T>(Socket clientSock, T obj)
+        public static void Send<T>(Socket clientSock, T obj)
         {
             byte[] dataByte = SerializationUtil.SerializeToByte(obj);
             send(clientSock, dataByte);
-        }
-
-        public static T ReceivePrimitive<T>(Socket clientSock)
-        {
-            object obj = Receive(clientSock);
-            if (obj != null)
-            {
-                byte[] dataByte = Receive(clientSock);
-                T data = (T)SerializationUtil.DeserializeToObject(dataByte);
-                return data;
-            }
-            else
-            {
-                return default(T);
-            }
         }
 
         protected static void send(Socket clientSock, byte[] data)
@@ -72,6 +57,21 @@ namespace Tools
             }
         }
 
+        public static T Receive<T>(Socket clientSock)
+        {
+            object obj = Receive(clientSock);
+            if (obj != null)
+            {
+                byte[] dataByte = Receive(clientSock);
+                T data = (T)SerializationUtil.DeserializeToObject(dataByte);
+                return data;
+            }
+            else
+            {
+                return default(T);
+            }
+        }
+        
         protected static byte[] Receive(Socket clientSock)
         {
             // 객체의 바이트수 수신
